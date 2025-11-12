@@ -5,7 +5,7 @@ import Image from 'next/image';
 
 // List your images here
 const images = [
-  '/images/heroimg.jpg',
+  '/images/heroImg.jpg',
   '/images/ExteriorWash.jpg',
   '/images/InteriorDetailing.jpg',
   '/images/WheelCleaning.jpg',
