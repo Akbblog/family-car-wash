@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
-// import { Menu, X } from "lucide-react"; // <-- WE ARE REMOVING THIS
+
 
 // --- We are adding the icons directly as components ---
 const MenuIcon = () => (
