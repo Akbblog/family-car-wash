@@ -20,11 +20,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         await connectDB();
 
-        const user = await User.findOne({ email: credentials.email }).select("+password");
+        const user = await User.findOne({ email: String(credentials.email) }).select("+password");
 
         if (!user) return null;
 
-        const passwordsMatch = await bcrypt.compare(credentials.password, user.password);
+        const passwordsMatch = await bcrypt.compare(
+          String(credentials.password), // ✅ cast to string
+          user.password
+        );
+
         if (!passwordsMatch) return null;
 
         // TypeScript-safe return for AdapterUser
@@ -32,7 +36,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           id: user._id.toString(),
           name: user.name,
           email: user.email,
-          emailVerified: null, // Required by AdapterUser type
+          emailVerified: null,
         };
       },
     }),
