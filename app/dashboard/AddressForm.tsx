@@ -1,11 +1,11 @@
 'use client';
 
 import { updateServiceDetails } from '@/app/actions/user';
-import { useFormState } from 'react-dom';
 import { useState, useEffect } from 'react';
 
 type Props = {
   userData: {
+    id: string; // user id for update
     address?: string;
     city?: string;
     zip?: string;
@@ -30,6 +30,7 @@ function SubmitButton({ pending }: { pending: boolean }) {
   );
 }
 
+// Helper components
 function DaySelect({ name, defaultValue }: { name: string; defaultValue?: string }) {
   return (
     <select
@@ -68,16 +69,18 @@ function TimeSelect({ name, defaultValue }: { name: string; defaultValue?: strin
 }
 
 export default function AddressForm({ userData }: Props) {
+  const serverHasDetails =
+    userData?.address && userData.preferredDay1 && userData.preferredDay2;
+  const [currentHasDetails, setCurrentHasDetails] = useState(!!serverHasDetails);
+  const [isEditing, setIsEditing] = useState(!serverHasDetails);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [isEditing, setIsEditing] = useState(!userData?.address);
-
-  const serverHasDetails = userData?.address && userData.preferredDay1 && userData.preferredDay2;
 
   useEffect(() => {
     if (success) {
       setIsEditing(false);
+      setCurrentHasDetails(true);
     }
   }, [success]);
 
@@ -86,11 +89,13 @@ export default function AddressForm({ userData }: Props) {
     setPending(true);
     setError(null);
 
-    const form = e.currentTarget;
-    const formData = new FormData(form);
+    const formData = new FormData(e.currentTarget);
 
     try {
-      const result = await updateServiceDetails(Object.fromEntries(formData) as any);
+      const result = await updateServiceDetails(
+        userData.id,
+        Object.fromEntries(formData)
+      );
 
       if (result.success) {
         setSuccess(true);
@@ -106,11 +111,13 @@ export default function AddressForm({ userData }: Props) {
   };
 
   // Show saved data
-  if (serverHasDetails && !isEditing) {
+  if (currentHasDetails && !isEditing) {
     return (
       <div className="bg-[#111] border border-white/5 p-6 rounded-xl">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-white uppercase tracking-widest font-bold">Address & Visit Details</h3>
+          <h3 className="text-white uppercase tracking-widest font-bold">
+            Address & Visit Details
+          </h3>
           <button
             onClick={() => setIsEditing(true)}
             className="text-xs text-[#999] uppercase tracking-widest hover:text-[#ff3366]"
@@ -127,10 +134,12 @@ export default function AddressForm({ userData }: Props) {
               {userData.city}, {userData.zip}
             </p>
           </div>
+
           <div>
             <p className="text-xs text-[#999] uppercase">Contact</p>
             <p>{userData.phone || 'N/A'}</p>
           </div>
+
           <div>
             <p className="text-xs text-[#999] uppercase">Visit 1 Preference</p>
             <p>
@@ -143,7 +152,9 @@ export default function AddressForm({ userData }: Props) {
               {userData.preferredDay2} ({userData.preferredTime2})
             </p>
           </div>
-          <div className="pt-2 italic text-white/50">Notes: {userData.notes || 'N/A'}</div>
+          <div className="pt-2 italic text-white/50">
+            Notes: {userData.notes || 'N/A'}
+          </div>
         </div>
       </div>
     );
@@ -155,21 +166,26 @@ export default function AddressForm({ userData }: Props) {
       <h3 className="text-white uppercase tracking-widest font-bold mb-6">
         {serverHasDetails ? 'Edit Address & Visit Details' : 'Save Address & Visit Details'}
       </h3>
+
       {error && (
         <p className="mb-4 p-3 bg-red-500/10 text-red-500 text-xs text-center border border-red-500/20">
           {error}
         </p>
       )}
+
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Address Fields */}
         <p className="text-sm text-[#999] font-bold tracking-wider">Step 1: Add Location & Schedule</p>
-        <input
-          name="address"
-          type="text"
-          placeholder="Street Address"
-          defaultValue={userData.address}
-          required
-          className="w-full bg-black border border-white/10 px-4 py-3 text-white placeholder:text-white/20 text-sm focus:outline-none focus:border-[#ff3366] transition-colors"
-        />
+        <div>
+          <input
+            name="address"
+            type="text"
+            placeholder="Street Address"
+            defaultValue={userData.address}
+            required
+            className="w-full bg-black border border-white/10 px-4 py-3 text-white placeholder:text-white/20 text-sm focus:outline-none focus:border-[#ff3366] transition-colors"
+          />
+        </div>
         <div className="grid grid-cols-2 gap-4">
           <input
             name="city"
@@ -188,15 +204,22 @@ export default function AddressForm({ userData }: Props) {
             className="w-full bg-black border border-white/10 px-4 py-3 text-white placeholder:text-white/20 text-sm focus:outline-none focus:border-[#ff3366] transition-colors"
           />
         </div>
-        <input
-          name="phone"
-          type="tel"
-          placeholder="Your contact number"
-          defaultValue={userData.phone}
-          required
-          className="w-full bg-black border border-white/10 px-4 py-3 text-white placeholder:text-white/20 text-sm focus:outline-none focus:border-[#ff3366] transition-colors"
-        />
+
+        {/* Phone */}
+        <div>
+          <input
+            name="phone"
+            type="tel"
+            placeholder="Your contact number"
+            defaultValue={userData.phone}
+            required
+            className="w-full bg-black border border-white/10 px-4 py-3 text-white placeholder:text-white/20 text-sm focus:outline-none focus:border-[#ff3366] transition-colors"
+          />
+        </div>
+
+        {/* Scheduling Fields */}
         <p className="text-sm text-[#999] font-bold tracking-wider pt-4">Step 2: Scheduling (2 Visits)</p>
+
         <div className="p-4 bg-black/30 border border-white/5 rounded-lg">
           <label className="block text-[11px] text-white uppercase tracking-widest mb-2">Visit 1 Preference</label>
           <div className="grid grid-cols-2 gap-4">
@@ -204,6 +227,7 @@ export default function AddressForm({ userData }: Props) {
             <TimeSelect name="preferredTime1" defaultValue={userData.preferredTime1} />
           </div>
         </div>
+
         <div className="p-4 bg-black/30 border border-white/5 rounded-lg">
           <label className="block text-[11px] text-white uppercase tracking-widest mb-2">Visit 2 Preference</label>
           <div className="grid grid-cols-2 gap-4">
@@ -211,6 +235,8 @@ export default function AddressForm({ userData }: Props) {
             <TimeSelect name="preferredTime2" defaultValue={userData.preferredTime2} />
           </div>
         </div>
+
+        {/* Notes Field */}
         <p className="text-sm text-[#999] font-bold tracking-wider pt-4">Step 3: Service Notes</p>
         <textarea
           name="notes"
@@ -219,7 +245,9 @@ export default function AddressForm({ userData }: Props) {
           rows={3}
           className="w-full bg-black border border-white/10 px-4 py-3 text-white placeholder:text-white/20 text-sm focus:outline-none focus:border-[#ff3366] transition-colors"
         />
+
         <SubmitButton pending={pending} />
+
         {serverHasDetails && (
           <button
             type="button"
