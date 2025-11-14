@@ -5,8 +5,7 @@ import connectDB from '@/lib/db';
 import User from '@/lib/models/User';
 import Car from '@/lib/models/Car';
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation';
-
+import { redirect } from 'next/navigation'; // <-- THIS IS THE MISSING LINE
 
 type State = {
   error?: string;
@@ -25,15 +24,12 @@ export async function updateServiceDetails(prevState: State, formData: FormData)
     address: formData.get('address') as string,
     city: formData.get('city') as string,
     zip: formData.get('zip') as string,
-    // --- ADD 'phone' HERE ---
-
     preferredDay1: formData.get('preferredDay1') as string,
     preferredTime1: formData.get('preferredTime1') as string,
     preferredDay2: formData.get('preferredDay2') as string,
     preferredTime2: formData.get('preferredTime2') as string,
     phone: formData.get('phone') as string,
     notes: formData.get('notes') as string,
-
   };
 
   if (!data.address || !data.city || !data.zip || !data.preferredDay1  || !data.preferredTime1 || !data.phone) {
@@ -43,9 +39,11 @@ export async function updateServiceDetails(prevState: State, formData: FormData)
   try {
     await connectDB();
     await User.findByIdAndUpdate(userId, data);
+    
+    // This will now work because 'redirect' is imported
     revalidatePath('/dashboard'); 
     redirect('/dashboard');
-    return { success: 'Details saved successfully!' }; // <-- This line sends the success message
+
   } catch (error) {
     console.error(error);
     return { error: 'An error occurred while saving details.' };
@@ -78,11 +76,11 @@ export async function addCar(prevState: State, formData: FormData): Promise<Stat
       color,
       licensePlate,
     });
-     // This will also work now
+    
+    // This will also work now
     revalidatePath('/dashboard');
     redirect('/dashboard');
-    
-    return { success: 'Vehicle added successfully!' };
+
   } catch (error) {
     console.error(error);
     return { error: 'An error occurred while adding the car.' };
