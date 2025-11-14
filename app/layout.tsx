@@ -3,8 +3,8 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-// We only need this ONE provider
-import AppSessionProvider from './SessionProvider'; 
+import AppSessionProvider from "./SessionProvider"; 
+import { auth } from "@/auth"; // ⬅ NEXTAUTH v5 correct import
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -17,21 +17,16 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const session = await auth(); // ⬅ Fetch session correctly for v5
+
   return (
     <html lang="en" className="scroll-smooth">
       <body className={`${inter.className} antialiased bg-[#0a0a0a] text-white`}>
-        {/* We only wrap with the ONE, correct provider */}
-        <AppSessionProvider>
+        <AppSessionProvider session={session}>
           <Navbar />
           <div className="pt-[80px] min-h-[calc(100vh-1px)] flex flex-col justify-between">
-            <div>
-              {children}
-            </div>
+            <div>{children}</div>
             <Footer />
           </div>
         </AppSessionProvider>

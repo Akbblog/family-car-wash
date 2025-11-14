@@ -1,12 +1,13 @@
-'use client';
+"use client";
 
-// This is the one and only file that needs 'use client' for the provider
-import { SessionProvider } from 'next-auth/react';
+import { SessionProvider } from "next-auth/react";
 
 export default function AppSessionProvider({
   children,
+  session,
 }: {
   children: React.ReactNode;
+  session?: any;
 }) {
-  return <SessionProvider>{children}</SessionProvider>;
+  return <SessionProvider session={session}>{children}</SessionProvider>;
 }
