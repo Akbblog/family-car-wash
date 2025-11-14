@@ -5,7 +5,7 @@ import connectDB from '@/lib/db';
 import User from '@/lib/models/User';
 import Car from '@/lib/models/Car';
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation'; // <-- THIS IS THE MISSING LINE
+import { redirect } from 'next/navigation'; // <-- 1. Import redirect
 
 type State = {
   error?: string;
@@ -40,9 +40,9 @@ export async function updateServiceDetails(prevState: State, formData: FormData)
     await connectDB();
     await User.findByIdAndUpdate(userId, data);
     
-    // This will now work because 'redirect' is imported
+    // --- 2. THIS IS THE FIX ---
     revalidatePath('/dashboard'); 
-    redirect('/dashboard');
+    redirect('/dashboard'); // This forces a reload with new data
 
   } catch (error) {
     console.error(error);
@@ -77,9 +77,9 @@ export async function addCar(prevState: State, formData: FormData): Promise<Stat
       licensePlate,
     });
     
-    // This will also work now
+    // --- 3. ALSO FIX THIS ONE ---
     revalidatePath('/dashboard');
-    redirect('/dashboard');
+    redirect('/dashboard'); // This forces a reload with new data
 
   } catch (error) {
     console.error(error);

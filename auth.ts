@@ -64,5 +64,4 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
   // --- WE HAVE REMOVED THE 'callbacks' BLOCK ---
   // It was referencing 'user.role' which does not exist and was causing errors.
-  // NextAuth will automatically handle the session ID.
 });
