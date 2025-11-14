@@ -5,19 +5,16 @@ import connectDB from '@/lib/db';
 import User from '@/lib/models/User';
 import Car from '@/lib/models/Car';
 import { revalidatePath } from 'next/cache';
-import { redirect } from 'next/navigation'; // <-- 1. Import redirect
 
 type State = {
   error?: string;
   success?: string;
 };
 
-// This is your existing function for saving the address
+// Save address & visit details
 export async function updateServiceDetails(prevState: State, formData: FormData): Promise<State> {
   const session = await auth();
-  if (!session?.user?.id) {
-    return { error: 'You must be logged in to update details.' };
-  }
+  if (!session?.user?.id) return { error: 'You must be logged in to update details.' };
   const userId = session.user.id;
 
   const data = {
@@ -32,7 +29,7 @@ export async function updateServiceDetails(prevState: State, formData: FormData)
     notes: formData.get('notes') as string,
   };
 
-  if (!data.address || !data.city || !data.zip || !data.preferredDay1  || !data.preferredTime1 || !data.phone) {
+  if (!data.address || !data.city || !data.zip || !data.preferredDay1 || !data.preferredTime1 || !data.phone) {
     return { error: 'Please fill in all required fields.' };
   }
 
@@ -40,17 +37,17 @@ export async function updateServiceDetails(prevState: State, formData: FormData)
     await connectDB();
     await User.findByIdAndUpdate(userId, data);
     
-    // --- 2. THIS IS THE FIX ---
-    revalidatePath('/dashboard'); 
-    redirect('/dashboard'); // This forces a reload with new data
+    // ✅ just revalidate path, don't redirect
+    revalidatePath('/dashboard');
 
+    return { success: 'Details updated successfully.' };
   } catch (error) {
     console.error(error);
     return { error: 'An error occurred while saving details.' };
   }
 }
 
-// --- This is your existing addCar function (no changes) ---
+// Add a car
 export async function addCar(prevState: State, formData: FormData): Promise<State> {
   const make = formData.get('make') as string;
   const model = formData.get('model') as string;
@@ -62,25 +59,16 @@ export async function addCar(prevState: State, formData: FormData): Promise<Stat
   }
 
   const session = await auth();
-  if (!session?.user?.id) {
-    return { error: 'You must be logged in to add a car.' };
-  }
+  if (!session?.user?.id) return { error: 'You must be logged in to add a car.' };
   const userId = session.user.id;
 
   try {
     await connectDB();
-    await Car.create({
-      userId,
-      make,
-      model,
-      color,
-      licensePlate,
-    });
-    
-    // --- 3. ALSO FIX THIS ONE ---
-    revalidatePath('/dashboard');
-    
+    await Car.create({ userId, make, model, color, licensePlate });
 
+    revalidatePath('/dashboard');
+
+    return { success: 'Car added successfully.' };
   } catch (error) {
     console.error(error);
     return { error: 'An error occurred while adding the car.' };
