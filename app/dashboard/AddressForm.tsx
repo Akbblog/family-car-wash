@@ -1,11 +1,11 @@
 'use client';
-
+const router = useRouter();
 
 import { updateServiceDetails } from '@/app/actions/user';
 import { useFormState, useFormStatus } from 'react-dom';  
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-const router = useRouter();
+
 
 type Props = {
   userData: {
