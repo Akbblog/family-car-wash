@@ -3,7 +3,6 @@
 import { auth } from '@/auth';
 import connectDB from '@/lib/db';
 import User from '@/lib/models/User';
-import Car from '@/lib/models/Car';
 import { revalidatePath } from 'next/cache';
 
 type State = {
@@ -11,10 +10,12 @@ type State = {
   success?: string;
 };
 
-// Save address & visit details
-export async function updateServiceDetails(prevState: State, formData: FormData): Promise<State> {
+// Server action: only handle DB and validation
+export async function updateServiceDetails(formData: FormData): Promise<State> {
   const session = await auth();
-  if (!session?.user?.id) return { error: 'You must be logged in to update details.' };
+  if (!session?.user?.id) {
+    return { error: 'You must be logged in to update details.' };
+  }
   const userId = session.user.id;
 
   const data = {
@@ -36,41 +37,13 @@ export async function updateServiceDetails(prevState: State, formData: FormData)
   try {
     await connectDB();
     await User.findByIdAndUpdate(userId, data);
-    
-    // ✅ just revalidate path, don't redirect
+
+    // Revalidate dashboard cache
     revalidatePath('/dashboard');
 
-    return { success: 'Details updated successfully.' };
+    return { success: 'Details saved successfully' };
   } catch (error) {
     console.error(error);
     return { error: 'An error occurred while saving details.' };
-  }
-}
-
-// Add a car
-export async function addCar(prevState: State, formData: FormData): Promise<State> {
-  const make = formData.get('make') as string;
-  const model = formData.get('model') as string;
-  const color = formData.get('color') as string;
-  const licensePlate = formData.get('licensePlate') as string;
-
-  if (!make || !model || !color || !licensePlate) {
-    return { error: 'Please fill in all vehicle fields.' };
-  }
-
-  const session = await auth();
-  if (!session?.user?.id) return { error: 'You must be logged in to add a car.' };
-  const userId = session.user.id;
-
-  try {
-    await connectDB();
-    await Car.create({ userId, make, model, color, licensePlate });
-
-    revalidatePath('/dashboard');
-
-    return { success: 'Car added successfully.' };
-  } catch (error) {
-    console.error(error);
-    return { error: 'An error occurred while adding the car.' };
   }
 }
