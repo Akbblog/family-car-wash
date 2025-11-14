@@ -96,7 +96,7 @@ export default function AddressForm({ userData }: Props) {
 
   try {
     // Remove userData.id reference if it doesn't exist
-    const result = await updateServiceDetails(data);
+    const result = await updateServiceDetails({}, formData);
 
     if (result.success) {
       setIsEditing(false);
