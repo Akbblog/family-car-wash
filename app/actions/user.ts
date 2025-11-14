@@ -5,7 +5,7 @@ import connectDB from '@/lib/db';
 import User from '@/lib/models/User';
 import Car from '@/lib/models/Car';
 import { revalidatePath } from 'next/cache';
-
+import { redirect } from 'next/navigation'; // <-- 1. Import redirect
 
 type State = {
   error?: string;
@@ -24,15 +24,12 @@ export async function updateServiceDetails(prevState: State, formData: FormData)
     address: formData.get('address') as string,
     city: formData.get('city') as string,
     zip: formData.get('zip') as string,
-    // --- ADD 'phone' HERE ---
-
     preferredDay1: formData.get('preferredDay1') as string,
     preferredTime1: formData.get('preferredTime1') as string,
     preferredDay2: formData.get('preferredDay2') as string,
     preferredTime2: formData.get('preferredTime2') as string,
     phone: formData.get('phone') as string,
     notes: formData.get('notes') as string,
-
   };
 
   if (!data.address || !data.city || !data.zip || !data.preferredDay1  || !data.preferredTime1 || !data.phone) {
@@ -42,8 +39,11 @@ export async function updateServiceDetails(prevState: State, formData: FormData)
   try {
     await connectDB();
     await User.findByIdAndUpdate(userId, data);
-    revalidatePath('/dashboard');
-    return { success: 'Details saved successfully!' }; // <-- This line sends the success message
+    
+    // --- 2. THIS IS THE FIX ---
+    revalidatePath('/dashboard'); 
+    redirect('/dashboard'); // This forces a reload with new data
+
   } catch (error) {
     console.error(error);
     return { error: 'An error occurred while saving details.' };
@@ -76,8 +76,11 @@ export async function addCar(prevState: State, formData: FormData): Promise<Stat
       color,
       licensePlate,
     });
+    
+    // --- 3. ALSO FIX THIS ONE ---
     revalidatePath('/dashboard');
-    return { success: 'Vehicle added successfully!' };
+    redirect('/dashboard'); // This forces a reload with new data
+
   } catch (error) {
     console.error(error);
     return { error: 'An error occurred while adding the car.' };
