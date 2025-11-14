@@ -25,18 +25,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!user) return null;
 
         const passwordsMatch = await bcrypt.compare(
-          String(credentials.password), // ✅ cast to string
+          String(credentials.password),
           user.password
         );
 
         if (!passwordsMatch) return null;
 
-        // TypeScript-safe return for AdapterUser
+        // ✅ Must include emailVerified for AdapterUser
         return {
           id: user._id.toString(),
           name: user.name,
           email: user.email,
-          emailVerified: null,
+          emailVerified: null, // required
         };
       },
     }),
@@ -58,6 +58,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.id = user.id;
         token.name = user.name;
         token.email = user.email;
+        token.emailVerified = user.emailVerified ?? null; // ✅ include emailVerified
       }
       return token;
     },
@@ -67,6 +68,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           id: token.id as string,
           name: token.name as string,
           email: token.email as string,
+          emailVerified: token.emailVerified ?? null, // ✅ required
         };
       }
       return session;
