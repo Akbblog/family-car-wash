@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer"; // <-- 1. Import Footer
 import AuthProvider from "@/components/AuthProvider";
+import AppSessionProvider from './SessionProvider';
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -20,6 +21,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth">
       <body className={`${inter.className} antialiased bg-[#0a0a0a] text-white`}>
+        <AppSessionProvider>
         <AuthProvider>
         <Navbar />
         {/* 2. Wrap children in a min-height container */}
@@ -32,6 +34,7 @@ export default function RootLayout({
           
         </div>
         </AuthProvider>
+        </AppSessionProvider>
       </body>
     </html>
   );
