@@ -1,11 +1,11 @@
 'use client';
-const router = useRouter();
+
 
 import { updateServiceDetails } from '@/app/actions/user';
 import { useFormState, useFormStatus } from 'react-dom';  
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-
+const router = useRouter();
 
 type Props = {
   userData: {
@@ -78,23 +78,32 @@ export default function AddressForm({ userData }: Props) {
   const [currentHasDetails, setCurrentHasDetails] = useState(!!serverHasDetails);
   const [isEditing, setIsEditing] = useState(!serverHasDetails);
 
-
+const router = useRouter(); 
  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
   e.preventDefault();
   setPending(true);
   setError(null);
 
   const formData = new FormData(e.currentTarget);
+  const data = Object.fromEntries(formData.entries()) as {
+    address: string;
+    city: string;
+    zip: string;
+    phone: string;
+    notes?: string;
+    preferredDay1: string;
+    preferredTime1: string;
+    preferredDay2: string;
+    preferredTime2: string;
+  };
 
   try {
-    const result = await updateServiceDetails({}, formData); // call server action
+    // Remove userData.id reference if it doesn't exist
+    const result = await updateServiceDetails({}, formData);
 
     if (result.success) {
       setIsEditing(false);
       setCurrentHasDetails(true);
-
-      // ✅ Client-side redirect after saving
-      router.push('/dashboard');
     } else {
       setError(result.error || 'An error occurred while saving details.');
     }
