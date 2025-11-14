@@ -21,8 +21,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="scroll-smooth">
       <body className={`${inter.className} antialiased bg-[#0a0a0a] text-white`}>
-        <AppSessionProvider>
-        <AuthProvider>
+        <AppSessionProvider>        
         <Navbar />
         {/* 2. Wrap children in a min-height container */}
         <div className="pt-[80px] min-h-[calc(100vh-1px)] flex flex-col justify-between">
@@ -33,8 +32,7 @@ export default function RootLayout({
             <Footer /> {/* <-- 3. Add Footer here */}
           
         </div>
-        </AuthProvider>
-        </AppSessionProvider>
+      </AppSessionProvider>
       </body>
     </html>
   );
