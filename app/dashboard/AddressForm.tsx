@@ -1,21 +1,23 @@
 'use client';
 
-import { updateServiceDetails } from '@/app/actions/user';
 import { useState, useEffect } from 'react';
+import { updateServiceDetails } from '@/app/actions/user';
+
+type UserData = {
+  id: string;
+  address?: string;
+  city?: string;
+  zip?: string;
+  phone?: string;
+  notes?: string;
+  preferredDay1?: string;
+  preferredTime1?: string;
+  preferredDay2?: string;
+  preferredTime2?: string;
+};
 
 type Props = {
-  userData: {
-    id: string; // user id for update
-    address?: string;
-    city?: string;
-    zip?: string;
-    phone?: string;
-    notes?: string;
-    preferredDay1?: string;
-    preferredTime1?: string;
-    preferredDay2?: string;
-    preferredTime2?: string;
-  };
+  userData: UserData;
 };
 
 function SubmitButton({ pending }: { pending: boolean }) {
@@ -30,7 +32,6 @@ function SubmitButton({ pending }: { pending: boolean }) {
   );
 }
 
-// Helper components
 function DaySelect({ name, defaultValue }: { name: string; defaultValue?: string }) {
   return (
     <select
@@ -69,13 +70,11 @@ function TimeSelect({ name, defaultValue }: { name: string; defaultValue?: strin
 }
 
 export default function AddressForm({ userData }: Props) {
-  const serverHasDetails =
-    userData?.address && userData.preferredDay1 && userData.preferredDay2;
-  const [currentHasDetails, setCurrentHasDetails] = useState(!!serverHasDetails);
-  const [isEditing, setIsEditing] = useState(!serverHasDetails);
+  const [isEditing, setIsEditing] = useState(!userData.address);
+  const [currentHasDetails, setCurrentHasDetails] = useState(!!userData.address);
   const [pending, setPending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (success) {
@@ -90,13 +89,20 @@ export default function AddressForm({ userData }: Props) {
     setError(null);
 
     const formData = new FormData(e.currentTarget);
+    const data = Object.fromEntries(formData) as {
+      address: string;
+      city: string;
+      zip: string;
+      phone: string;
+      notes?: string;
+      preferredDay1: string;
+      preferredTime1: string;
+      preferredDay2: string;
+      preferredTime2: string;
+    };
 
     try {
-      const result = await updateServiceDetails(
-        userData.id,
-        Object.fromEntries(formData)
-      );
-
+      const result = await updateServiceDetails(userData.id, data);
       if (result.success) {
         setSuccess(true);
       } else {
@@ -110,7 +116,7 @@ export default function AddressForm({ userData }: Props) {
     }
   };
 
-  // Show saved data
+  // Show saved details
   if (currentHasDetails && !isEditing) {
     return (
       <div className="bg-[#111] border border-white/5 p-6 rounded-xl">
@@ -134,12 +140,10 @@ export default function AddressForm({ userData }: Props) {
               {userData.city}, {userData.zip}
             </p>
           </div>
-
           <div>
             <p className="text-xs text-[#999] uppercase">Contact</p>
             <p>{userData.phone || 'N/A'}</p>
           </div>
-
           <div>
             <p className="text-xs text-[#999] uppercase">Visit 1 Preference</p>
             <p>
@@ -164,7 +168,7 @@ export default function AddressForm({ userData }: Props) {
   return (
     <div className="bg-[#111] border border-white/5 p-6 rounded-xl">
       <h3 className="text-white uppercase tracking-widest font-bold mb-6">
-        {serverHasDetails ? 'Edit Address & Visit Details' : 'Save Address & Visit Details'}
+        {currentHasDetails ? 'Edit Address & Visit Details' : 'Save Address & Visit Details'}
       </h3>
 
       {error && (
@@ -190,7 +194,7 @@ export default function AddressForm({ userData }: Props) {
           <input
             name="city"
             type="text"
-            placeholder="Your City"
+            placeholder="City"
             defaultValue={userData.city}
             required
             className="w-full bg-black border border-white/10 px-4 py-3 text-white placeholder:text-white/20 text-sm focus:outline-none focus:border-[#ff3366] transition-colors"
@@ -204,43 +208,43 @@ export default function AddressForm({ userData }: Props) {
             className="w-full bg-black border border-white/10 px-4 py-3 text-white placeholder:text-white/20 text-sm focus:outline-none focus:border-[#ff3366] transition-colors"
           />
         </div>
-
-        {/* Phone */}
         <div>
           <input
             name="phone"
             type="tel"
-            placeholder="Your contact number"
+            placeholder="Phone Number"
             defaultValue={userData.phone}
             required
             className="w-full bg-black border border-white/10 px-4 py-3 text-white placeholder:text-white/20 text-sm focus:outline-none focus:border-[#ff3366] transition-colors"
           />
         </div>
 
-        {/* Scheduling Fields */}
+        {/* Scheduling */}
         <p className="text-sm text-[#999] font-bold tracking-wider pt-4">Step 2: Scheduling (2 Visits)</p>
-
         <div className="p-4 bg-black/30 border border-white/5 rounded-lg">
-          <label className="block text-[11px] text-white uppercase tracking-widest mb-2">Visit 1 Preference</label>
+          <label className="block text-[11px] text-white uppercase tracking-widest mb-2">
+            Visit 1 Preference
+          </label>
           <div className="grid grid-cols-2 gap-4">
             <DaySelect name="preferredDay1" defaultValue={userData.preferredDay1} />
             <TimeSelect name="preferredTime1" defaultValue={userData.preferredTime1} />
           </div>
         </div>
-
         <div className="p-4 bg-black/30 border border-white/5 rounded-lg">
-          <label className="block text-[11px] text-white uppercase tracking-widest mb-2">Visit 2 Preference</label>
+          <label className="block text-[11px] text-white uppercase tracking-widest mb-2">
+            Visit 2 Preference
+          </label>
           <div className="grid grid-cols-2 gap-4">
             <DaySelect name="preferredDay2" defaultValue={userData.preferredDay2} />
             <TimeSelect name="preferredTime2" defaultValue={userData.preferredTime2} />
           </div>
         </div>
 
-        {/* Notes Field */}
+        {/* Notes */}
         <p className="text-sm text-[#999] font-bold tracking-wider pt-4">Step 3: Service Notes</p>
         <textarea
           name="notes"
-          placeholder="e.g. My gate code is #1234."
+          placeholder="Gate codes, parking, etc."
           defaultValue={userData.notes}
           rows={3}
           className="w-full bg-black border border-white/10 px-4 py-3 text-white placeholder:text-white/20 text-sm focus:outline-none focus:border-[#ff3366] transition-colors"
@@ -248,7 +252,7 @@ export default function AddressForm({ userData }: Props) {
 
         <SubmitButton pending={pending} />
 
-        {serverHasDetails && (
+        {currentHasDetails && (
           <button
             type="button"
             onClick={() => setIsEditing(false)}
