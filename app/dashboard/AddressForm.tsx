@@ -75,14 +75,6 @@ export default function AddressForm({ userData }: Props) {
   const [currentHasDetails, setCurrentHasDetails] = useState(!!serverHasDetails);
   const [isEditing, setIsEditing] = useState(!serverHasDetails);
 
-  useEffect(() => {
-  if (state?.success) {
-    setIsEditing(false);
-    setCurrentHasDetails(true);
-  }
-}, [state?.success]);
-
-
 
  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
   e.preventDefault();
@@ -166,37 +158,7 @@ export default function AddressForm({ userData }: Props) {
     );
   }
 // Form submit handler
-async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-  event.preventDefault();
 
-  const formData = new FormData(event.currentTarget);
-  const data = Object.fromEntries(formData.entries()) as {
-    address?: string;
-    city?: string;
-    zip?: string;
-    phone?: string;
-    notes?: string;
-    preferredDay1?: string;
-    preferredTime1?: string;
-    preferredDay2?: string;
-    preferredTime2?: string;
-  };
-
-    try {
-      // Use just `data` if your backend doesn't require ID
-      const result = await updateServiceDetails(data);
-
-      if (result.success) {
-        setIsEditing(false);
-        setCurrentHasDetails(true);
-      } else {
-        alert('An error occurred while saving details.');
-      }
-    } catch (err) {
-      console.error(err);
-      alert('An error occurred while saving details.');
-    }
-  }
 
   // Show form
   return (
@@ -204,10 +166,10 @@ async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
       <h3 className="text-white uppercase tracking-widest font-bold mb-6">
         {serverHasDetails ? 'Edit Address & Visit Details' : 'Save Address & Visit Details'}
       </h3>
-      {state?.error && (
-        <p className="mb-4 p-3 bg-red-500/10 text-red-500 text-xs text-center border border-red-500/20">
-          {state.error}
-        </p>
+      {error && (
+      <p className="mb-4 p-3 bg-red-500/10 text-red-500 text-xs text-center border border-red-500/20">
+        {error}
+      </p>
       )}
       <form onSubmit={handleSubmit} className="space-y-4">
 
