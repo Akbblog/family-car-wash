@@ -5,6 +5,7 @@ import connectDB from '@/lib/db';
 import User from '@/lib/models/User';
 import Car from '@/lib/models/Car';
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 
 
 type State = {
@@ -42,7 +43,8 @@ export async function updateServiceDetails(prevState: State, formData: FormData)
   try {
     await connectDB();
     await User.findByIdAndUpdate(userId, data);
-    revalidatePath('/dashboard');
+    revalidatePath('/dashboard'); 
+    redirect('/dashboard');
     return { success: 'Details saved successfully!' }; // <-- This line sends the success message
   } catch (error) {
     console.error(error);
@@ -76,7 +78,10 @@ export async function addCar(prevState: State, formData: FormData): Promise<Stat
       color,
       licensePlate,
     });
+     // This will also work now
     revalidatePath('/dashboard');
+    redirect('/dashboard');
+    
     return { success: 'Vehicle added successfully!' };
   } catch (error) {
     console.error(error);
