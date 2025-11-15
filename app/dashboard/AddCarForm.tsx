@@ -45,7 +45,10 @@ export default function AddCarForm() {
   return (
     <div className="bg-[#111] border border-white/5 p-5 rounded-xl">
       {/* Reduced margin below header (mb-4) */}
-      <h3 className="text-white uppercase tracking-widest font-bold mb-2"></h3>    
+      <h3 className="text-white uppercase tracking-widest font-bold mb-4">
+        Add New Vehicle
+      </h3>
+
       {state?.error && (
         <p className="mb-4 p-3 bg-red-500/10 text-red-500 text-xs text-center border border-red-500/20">
           {state.error}
@@ -61,11 +64,15 @@ export default function AddCarForm() {
       <form action={formAction} className="space-y-3">
         
         {/* 🔑 FIXED STACK FIX: Removed sm:grid-cols-2 */}
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           
           <div>
             <label className="block text-[11px] text-[#999] uppercase tracking-widest mb-2">Make</label>
-            <input name="make" type="text" placeholder="e.g. TOYOTA" required className="w-full bg-black border border-white/10 px-4 py-3 text-white placeholder:text-white/20 text-sm focus:outline-none focus:border-[#ff3366] transition-colors" />
+            <input 
+              name="make"
+               type="text"
+               placeholder="e.g. TOYOTA"
+               required className="w-full bg-black border border-white/10 px-4 py-3 text-white placeholder:text-white/20 text-sm focus:outline-none focus:border-[#ff3366] transition-colors" />
           </div>
           
           <div>
@@ -75,7 +82,7 @@ export default function AddCarForm() {
         </div>
         
         {/* 🔑 FIXED STACK FIX: Removed sm:grid-cols-2 */}
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           
           <div>
             <label className="block text-[11px] text-[#999] uppercase tracking-widest mb-2">Color</label>
