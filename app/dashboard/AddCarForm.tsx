@@ -2,7 +2,7 @@
 
 import { addCar } from '@/app/actions/user';
 import { useFormState, useFormStatus } from 'react-dom';
-import { useState, useEffect } from 'react'; // 🔑 We need useState and useEffect for the collapsible UI
+// Removed unused imports: useState, useEffect
 
 // The initial state must match the return type of the action.
 const initialState: { error?: string; success?: string } = {};
@@ -13,9 +13,9 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="w-full py-3 bg-white text-black font-bold uppercase tracking-widest text-xs hover:bg-[#ff3366] hover:text-white transition-all disabled:opacity-50"
+      className="w-full py-3 bg-white text-black font-bold uppercase tracking-widest text-xs hover:bg-[#ff3366] hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
     >
-      {pending ? 'ADDING CAR...' : 'ADD VEHICLE'}
+      {pending ? 'ADDING VEHICLE...' : 'ADD VEHICLE'}
     </button>
   );
 }
@@ -24,34 +24,14 @@ export default function AddCarForm() {
   // State hook for Server Action response
   const [state, formAction] = useFormState(addCar, initialState);
   
-  // 🔑 COLLAPSIBLE UI: State to manage the visibility of the form.
-  const [isOpen, setIsOpen] = useState(false);
-
-  // 🔑 COLLAPSIBLE UI: Automatically close the form on successful submission.
-  useEffect(() => {
-    if (state?.success) {
-      setIsOpen(false);
-    }
-  }, [state?.success]);
-
-  // 🔑 COLLAPSIBLE UI: Conditional rendering. Show button if not open.
-  if (!isOpen) {
-    return (
-      <button
-        onClick={() => setIsOpen(true)}
-        className="w-full text-center py-4 bg-[#111] border border-white/5 rounded-xl uppercase tracking-widest font-bold text-xs text-white/70 hover:text-white hover:border-white/20 transition-all"
-      >
-        + Add New Vehicle
-      </button>
-    );
-  }
-
-  // Show the full form when isOpen is true.
+  // This structure matches your screenshot: the form is always visible.
   return (
     <div className="bg-[#111] border border-white/5 p-6 rounded-xl">
       <h3 className="text-white uppercase tracking-widest font-bold mb-6">
         Add New Vehicle
       </h3>
+      
+      {/* Error/Success messages */}
       {state?.error && (
         <p className="mb-4 p-3 bg-red-500/10 text-red-500 text-xs text-center border border-red-500/20">
           {state.error}
@@ -62,13 +42,13 @@ export default function AddCarForm() {
           {state.success}
         </p>
       )}
-{/* ALIGNMENT FIX: Increased vertical spacing on the form (space-y-6) */}
-      <form action={formAction} className="space-y-6">
+      
+      {/* ALIGNMENT FIX: Adjusted vertical spacing between rows (space-y-5) */}
+      <form action={formAction} className="space-y-5">
         
         <div className="grid grid-cols-2 gap-4">
           {/* Make Input */}
           <div>
-            {/* Label style remains the same */}
             <label className="block text-[11px] text-[#999] uppercase tracking-widest mb-2">Make</label>
             {/* ALIGNMENT FIX: Reduced input height (py-2 instead of py-3) for a cleaner line */}
             <input 
@@ -121,7 +101,6 @@ export default function AddCarForm() {
         
         <button
           type="button"
-          onClick={() => setIsOpen(false)}
           className="w-full py-2 text-xs text-[#999] uppercase tracking-widest hover:text-white"
         >
           Cancel
