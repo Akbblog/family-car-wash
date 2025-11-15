@@ -11,16 +11,13 @@ export default function ContactPage() {
           <h1 className="text-4xl font-black text-white uppercase tracking-tighter mb-2">
             Contact <span className="text-[#ff3366]">Support</span>
           </h1>
-          <p className="text-[#999] uppercase tracking-widest text-sm">
-            We're here to help you with anything you need.
-          </p>
-        </div>
+            </div>
 
         {/* Contact Info Cards */}
         <div className="grid md:grid-cols-3 gap-6 mb-12">
           <div className="bg-[#111] border border-white/5 p-6 rounded-xl">
             <h3 className="text-white uppercase tracking-widest font-bold mb-2">Email</h3>
-            <p className="text-[#999] text-sm">support@garagecontrol.com</p>
+            <p className="text-[#999] text-sm">support@familycarwash.com.au</p>
           </div>
 
           <div className="bg-[#111] border border-white/5 p-6 rounded-xl">
@@ -44,7 +41,6 @@ export default function ContactPage() {
               <label className="block text-[11px] text-[#999] uppercase tracking-widest mb-2">Your Name</label>
               <input 
                 type="text"
-                placeholder="John Doe"
                 required
                 className="w-full bg-black border border-white/10 px-4 py-3 text-white placeholder:text-white/20 text-sm focus:outline-none focus:border-[#ff3366] transition-colors"
               />
@@ -55,7 +51,6 @@ export default function ContactPage() {
               <label className="block text-[11px] text-[#999] uppercase tracking-widest mb-2">Email Address</label>
               <input 
                 type="email"
-                placeholder="your@email.com"
                 required
                 className="w-full bg-black border border-white/10 px-4 py-3 text-white placeholder:text-white/20 text-sm focus:outline-none focus:border-[#ff3366] transition-colors"
               />
@@ -65,7 +60,6 @@ export default function ContactPage() {
             <div>
               <label className="block text-[11px] text-[#999] uppercase tracking-widest mb-2">Message</label>
               <textarea
-                placeholder="How can we assist you?"
                 rows={5}
                 required
                 className="w-full bg-black border border-white/10 px-4 py-3 text-white placeholder:text-white/20 text-sm focus:outline-none focus:border-[#ff3366] transition-colors"
