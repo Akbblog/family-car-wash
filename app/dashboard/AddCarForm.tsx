@@ -81,12 +81,12 @@ export default function AddCarForm() {
           
           <div>
             <label className="block text-[11px] text-[#999] uppercase tracking-widest mb-2">Color</label>
-            <input name="color" type="text" placeholder="e.g. BLACK" required className="w-full bg-black border border-white/10 px-4 py-2 text-white placeholder:text-white/20 text-sm focus:outline-none focus:border-[#ff3366] transition-colors" />
+            <input name="color" type="text" placeholder="e.g. BLACK" required className="w-full bg-black border border-white/10 px-4 py-3 text-white placeholder:text-white/20 text-sm focus:outline-none focus:border-[#ff3366] transition-colors" />
           </div>
           
           <div>
             <label className="block text-[11px] text-[#999] uppercase tracking-widest mb-2">License Plate</label>
-            <input name="licensePlate" type="text" placeholder="e.g. 8ABC123" required className="w-full bg-black border border-white/10 px-4 py-2 text-white placeholder:text-white/20 text-sm focus:outline-none focus:border-[#ff3366] transition-colors" />
+            <input name="licensePlate" type="text" placeholder="e.g. 8ABC123" required className="w-full bg-black border border-white/10 px-4 py-3 text-white placeholder:text-white/20 text-sm focus:outline-none focus:border-[#ff3366] transition-colors" />
           </div>
         </div>
         
