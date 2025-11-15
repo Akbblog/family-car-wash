@@ -14,7 +14,7 @@ export default function ContactPage() {
             </div>
 
         {/* Contact Info Cards */}
-        <div className="grid md:grid-cols-3 gap-6 mb-12">
+        {/* <div className="grid md:grid-cols-3 gap-6 mb-12">
           <div className="bg-[#111] border border-white/5 p-6 rounded-xl">
             <h3 className="text-white uppercase tracking-widest font-bold mb-2">Email</h3>
             <p className="text-[#999] text-sm">support@familycarwash.com.au</p>
@@ -29,7 +29,7 @@ export default function ContactPage() {
             <h3 className="text-white uppercase tracking-widest font-bold mb-2">Hours</h3>
             <p className="text-[#999] text-sm">Mon - Fri / 8am - 6pm</p>
           </div>
-        </div>
+        </div> */}
 
         {/* Contact Form */}
         <div className="bg-[#111] border border-white/5 p-6 rounded-xl">
@@ -77,9 +77,9 @@ export default function ContactPage() {
         </div>
 
         {/* Footer Note */}
-        <p className="text-center text-[#555] text-xs mt-12">
+        {/* <p className="text-center text-[#555] text-xs mt-12">
           We usually respond within 24 hours.
-        </p>
+        </p> */}
       </div>
     </main>
   );
