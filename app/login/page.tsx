@@ -1,8 +1,9 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useFormState } from "react-dom";
 import { authenticate } from "@/app/actions/login";
+import { useFormState, useFormStatus } from "react-dom";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useEffect } from "react";
 
@@ -15,23 +16,14 @@ const initialState = {
 export default function LoginPage() {
   const router = useRouter();
   const [state, dispatch] = useFormState(authenticate, initialState);
-
   const { update } = useSession();
 
   useEffect(() => {
     if (state.success) {
-      update(); // 🔥 refresh NextAuth session instantly
+      update(); // refresh session instantly
       router.push("/dashboard");
     }
-  }, [state.success]);
-
-  return (
-    <form action={dispatch}>
-      {/* inputs here */}
-      {state.error && <p className="text-red-500">{state.error}</p>}
-    </form>
-  );
-}
+  }, [state.success, update, router]);
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-[#0a0a0a] p-6 relative overflow-hidden">
@@ -42,7 +34,9 @@ export default function LoginPage() {
           <h1 className="text-3xl font-black text-white uppercase tracking-wider mb-2">
             Welcome <span className="text-[#ff3366]">Back</span>
           </h1>
-          <p className="text-[#999] text-sm uppercase tracking-widest">Access Your Garage</p>
+          <p className="text-[#999] text-sm uppercase tracking-widest">
+            Access Your Garage
+          </p>
         </div>
 
         {state.error && (
@@ -53,7 +47,9 @@ export default function LoginPage() {
 
         <form action={dispatch} className="space-y-6">
           <div>
-            <label className="block text-[11px] text-[#999] uppercase tracking-widest mb-2">Email Address</label>
+            <label className="block text-[11px] text-[#999] uppercase tracking-widest mb-2">
+              Email Address
+            </label>
             <input
               type="email"
               name="email"
@@ -65,7 +61,9 @@ export default function LoginPage() {
 
           <div>
             <div className="flex justify-between items-center mb-2">
-              <label className="block text-[11px] text-[#999] uppercase tracking-widest">Password</label>
+              <label className="block text-[11px] text-[#999] uppercase tracking-widest">
+                Password
+              </label>
 
               <Link
                 href="/forgot-password"
@@ -100,7 +98,6 @@ export default function LoginPage() {
 
 function LoginButton() {
   const { pending } = useFormStatus();
-
   return (
     <button
       type="submit"

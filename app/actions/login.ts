@@ -32,4 +32,4 @@ export async function authenticate(prevState: any, formData: FormData) {
       error: "Something went wrong.",
     };
   }
-}s
+}
