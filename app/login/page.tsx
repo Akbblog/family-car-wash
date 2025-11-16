@@ -9,9 +9,14 @@ export default function LoginPage() {
   const router = useRouter();
   const [state, dispatch] = useFormState(authenticate, { error: null, success: false });
 
+  const { update } = useSession();
+
+useEffect(() => {
   if (state.success) {
-    router.push("/dashboard"); // 🔥 Triggers instant session update
+    update();              // 🔥 instantly re-fetch session → Navbar updates
+    router.push("/dashboard");
   }
+}, [state.success]);
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-[#0a0a0a] p-6 relative overflow-hidden">
