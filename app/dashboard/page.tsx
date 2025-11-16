@@ -147,8 +147,8 @@ export default async function Dashboard() {
           <div className="space-y-8">
             <CarList cars={cars} />
           </div>
-        </div>
-      </div>
+
+
     </main>
   );
 }
