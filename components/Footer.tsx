@@ -23,13 +23,14 @@ export default function Footer() {
             <li><Link href="/" className="text-[#999] text-sm hover:text-[#ff3366] transition-colors">Home</Link></li>
             <li><Link href="/#services" className="text-[#999] text-sm hover:text-[#ff3366] transition-colors">Services</Link></li>
             <li><Link href="/dashboard" className="text-[#999] text-sm hover:text-[#ff3366] transition-colors">My Garage</Link></li>
+            <li><Link href="/contact" className="text-[#999] text-sm hover:text-[#ff3366] transition-colors">Contact Us</Link></li>
           </ul>
         </div>
 
         <div>
           
           <ul className="space-y-2">
-            <li><Link href="/contact" className="text-[#999] text-sm hover:text-[#ff3366] transition-colors">Contact Us</Link></li>
+            
           </ul>
         </div>
       </div>
