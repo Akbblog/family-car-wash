@@ -4,9 +4,7 @@ import "./globals.css";
 
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import AppSessionProvider from "./SessionProvider";
-import { auth } from "@/auth"; // Correct NextAuth v5 import
-import AuthProvider from "./actions/AuthProvider";
+import AuthProvider from "./SessionProvider"; // ← USE ONLY THIS
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -15,21 +13,22 @@ export const metadata: Metadata = {
   description: "We wash, you relax. Bi-weekly car care subscription.",
 };
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const session = await auth(); // fetch session server-side
+export default function RootLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <html lang="en" className="scroll-smooth">
       <body className={`${inter.className} antialiased bg-[#0a0a0a] text-white`}>
-        <AppSessionProvider session={session}>
+        
+        {/* ONE global session provider */}
         <AuthProvider>
           <Navbar />
+
           <div className="pt-[80px] min-h-[calc(100vh-1px)] flex flex-col justify-between">
             <div>{children}</div>
             <Footer />
           </div>
         </AuthProvider>
-        </AppSessionProvider>
+
       </body>
     </html>
   );
