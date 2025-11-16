@@ -20,8 +20,6 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: 'credentials',
   },
-  // --- SERVICE & SUBSCRIPTION DETAILS ---
-  // (This is the single, correct definition)
   isSubscribed: {
     type: Boolean,
     default: false,
@@ -31,10 +29,6 @@ const UserSchema = new mongoose.Schema({
     unique: true,
     sparse: true, // Allows multiple null values
   },
-  
-  // --- NEW FIELD FOR WAITING LIST ---
-  isOnWaitingList: { type: Boolean, default: false },
-
   // --- SERVICE DETAILS ---
   address: { type: String },
   city: { type: String },
@@ -44,6 +38,9 @@ const UserSchema = new mongoose.Schema({
   preferredTime1: { type: String },
   preferredDay2: { type: String },
   preferredTime2: { type: String },
+  
+  
+  // --- ADD THIS LINE ---
   phone: { type: String },
 
 }, { timestamps: true });

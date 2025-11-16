@@ -8,8 +8,6 @@ import Car from '@/lib/models/Car';
 import User from '@/lib/models/User';
 import CarList from './CarList';
 import SignOutButton from '@/components/SignOutButton'; 
-import WaitingListButton from "@/components/WaitingListButton";
-
 
 export const dynamic = 'force-dynamic';
 
@@ -18,7 +16,7 @@ async function getDashboardData(userId: string) {
   
   const [user, cars] = await Promise.all([
     User.findById(userId)
-      .select('name email isSubscribed isOnWaitingList address city zip notes preferredDay1 preferredTime1 preferredDay2 preferredTime2 phone') 
+      .select('name email isSubscribed address city zip notes preferredDay1 preferredTime1 preferredDay2 preferredTime2 phone') 
       .lean(),
     Car.find({ userId }).sort({ createdAt: -1 }).lean(),
   ]);
@@ -58,15 +56,6 @@ export default async function Dashboard() {
 
   const { user, cars, userData } = await getDashboardData(session.user.id);
 
-  // --- 2. THE NEW LOGIC ---
-  // Read the "switch" from your Vercel environment variables
-  const subscriptionsOpen = process.env.SUBSCRIPTIONS_OPEN === 'true';
-
-    // Get the user's status from the database
-  const isSubscribed = (user as any).isSubscribed || false;
-  const isOnWaitingList = (user as any).isOnWaitingList || false;
-  // --- END NEW LOGIC ---
-
   return (
     <main className="min-h-screen bg-[#0a0a0a] p-6 md:p-12">
       <div className="max-w-[1400px] mx-auto">
@@ -86,54 +75,40 @@ export default async function Dashboard() {
 
         </div>
 
-        {/* --- 3. UPDATED MEMBERSHIP STATUS CARD ---
-              This now contains the full logic for all 4 states.
-            */}
+        <div className="grid lg:grid-cols-[350px_1fr] gap-12">
+          {/* Left Column: Status & Actions */}
+          <div className="space-y-8">
+            {/* Subscription Status Card */}
             <div
               className={`p-8 rounded-xl border ${
-                isSubscribed
+                // And here
+                (user as any).isSubscribed
                   ? 'bg-[#ff3366]/10 border-[#ff3366]/30'
                   : 'bg-[#111] border-white/5'
               }`}
             >
               <h3 className="text-white uppercase tracking-widest font-bold mb-4 flex items-center">
                 MEMBERSHIP STATUS
-                {isSubscribed && (
+                {(user as any).isSubscribed && (
                   <span className="ml-2 inline-block w-2 h-2 bg-[#ff3366] rounded-full animate-pulse" />
                 )}
               </h3>
-              
-              {isSubscribed ? (
-                // STATE 1: User is ACTIVE
+              {(user as any).isSubscribed ? (
                 <div>
-                  <div className="text-2xl font-black text-[#ff3366] mb-2">ACTIVE</div>
-                  <p className="text-[#999] text-sm">Your service preferences are saved.</p>
+                  <div className="text-2xl font-black text-[#ff3366] mb-2">
+                    ACTIVE
+                  </div>
+                  <p className="text-[#999] text-sm">
+                    Your service preferences are saved.
+                  </p>
                 </div>
-              ) : subscriptionsOpen ? (
-                // STATE 2: User is INACTIVE, but subscriptions are OPEN
+              ) : (
                 <div>
                   <div className="text-white/50 mb-6">INACTIVE</div>
                   <p className="text-[#999] text-sm mb-6">
                     Activate your plan to start bi-weekly services.
                   </p>
                   <SubscribeButton />
-                </div>
-              ) : isOnWaitingList ? (
-                // STATE 3: User is INACTIVE, subscriptions are CLOSED, but user IS on the list
-                <div>
-                  <div className="text-2xl font-black text-blue-400 mb-2">ON WAITING LIST</div>
-                  <p className="text-[#999] text-sm">
-                    You're on the list! We'll contact you as soon as a slot becomes available.
-                  </p>
-                </div>
-              ) : (
-                // STATE 4: User is INACTIVE, subscriptions are CLOSED, and user is NOT on the list
-                <div>
-                  <div className="text-white/50 mb-6">WE'RE AT CAPACITY</div>
-                  <p className="text-[#999] text-sm mb-6">
-                    Our subscription slots are currently full. Join the waiting list to be notified when we have an opening.
-                  </p>
-                  <WaitingListButton />
                 </div>
               )}
             </div>
@@ -147,8 +122,8 @@ export default async function Dashboard() {
           <div className="space-y-8">
             <CarList cars={cars} />
           </div>
-
-
+        </div>
+      </div>
     </main>
   );
 }

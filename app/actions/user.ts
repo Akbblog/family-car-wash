@@ -11,32 +11,6 @@ type Result = {
   error?: string;
 };
 
-// --- THIS IS THE NEW FUNCTION YOU NEED TO ADD ---
-// This will fix the build error: "Export joinWaitingList doesn't exist"
-export async function joinWaitingList(): Promise<Result> {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return { error: 'You must be logged in to join the list.' };
-  }
-  const userId = session.user.id;
-
-  try {
-    await connectDB();
-    // Update the user's status
-    await User.findByIdAndUpdate(userId, { 
-      isOnWaitingList: true 
-    });
-
-    // Revalidate the dashboard page to show the new status
-    revalidatePath('/dashboard');
-    return { success: 'true' };
-
-  } catch (error) {
-    console.error(error);
-    return { error: 'An error occurred. Please try again.' };
-  }
-}
-
 // ---------------------------------------------
 // Your existing addCar function
 // ---------------------------------------------
