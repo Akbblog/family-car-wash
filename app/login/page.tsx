@@ -10,8 +10,10 @@ export default function LoginPage() {
   const [state, dispatch] = useFormState(authenticate, { error: null, success: false });
 
   if (state.success) {
-    router.push("/dashboard"); // 🔥 Triggers instant session update
-  }
+  router.refresh();                // refresh next.js cache
+  window.location.href = "/dashboard";  // FULL RELOAD for instant navbar update
+}
+
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-[#0a0a0a] p-6 relative overflow-hidden">
