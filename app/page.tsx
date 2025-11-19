@@ -3,6 +3,8 @@ import { auth } from "@/auth";
 import Image from "next/image";
 import Reveal from "@/components/Reveal";
 import HeroCarousel from "@/components/HeroCarousel";
+import LimitedSlotsPopup from "@/components/LimitedSlotsPopup";
+
 
 
 export const dynamic = "force-dynamic";
@@ -13,6 +15,8 @@ export default async function HomePage() {
   return (
     <div className="bg-[#0a0a0a] text-white min-h-screen">
 
+        
+
       {/* --- HERO SECTION --- */}
       <section id="home" className="relative min-h-screen overflow-hidden bg-black flex items-center py-20 lg:py-0">
         {/* Animated Background Gradient */}
@@ -20,6 +24,7 @@ export default async function HomePage() {
             background: 'conic-gradient(from 180deg at 50% 50%, #ff3366 0deg, #000 60deg, #ff3366 120deg, #000 180deg, #ff3366 240deg, #000 300deg, #ff3366 360deg)',
             filter: 'blur(100px)',
         }}></div>
+        <LimitedSlotsPopup enabled={true} />
 
         <div className="relative z-10 max-w-[1400px] mx-auto px-6 md:px-12 grid lg:grid-cols-2 items-center gap-12 lg:gap-0 h-full">
             <div className="flex flex-col justify-center pt-10 lg:pt-0">
