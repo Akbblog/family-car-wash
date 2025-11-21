@@ -1,24 +1,68 @@
+// app/contact/page.tsx
 "use client";
 
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";   // <-- our helper
 
 export default function ContactPage() {
   const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
+  const [status, setStatus] = useState<
+    "idle" | "success" | "error" | "invalid"
+  >("idle");
+  const [errors, setErrors] = useState<{
+    name?: string;
+    phone?: string;
+    email?: string;
+    message?: string;
+  }>({});
 
-  async function handleSubmit(e: any) {
+  /* ---------- helper: client‑side validation ---------- */
+  const validate = (data: {
+    name: string;
+    phone: string;
+    email: string;
+    message: string;
+  }) => {
+    const errs: typeof errors = {};
+
+    if (!data.name.trim()) errs.name = "Name required";
+
+    // simple “phone‑look‑alike” regex (digits, spaces, (), +‑)
+    if (!/^[\d\s()+-]{7,15}$/.test(data.phone))
+      errs.phone = "Valid phone number required";
+
+    if (!data.email.trim() || !/^[^@]+@[^@]+\.[^@]+$/.test(data.email))
+      errs.email = "Valid e‑mail required";
+
+    if (!data.message.trim()) errs.message = "Message required";
+
+    return errs;
+  };
+
+  /* ---------- submit handler ---------- */
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
+    setErrors({});
     setStatus("idle");
 
-    const form = e.target;
+    const form = e.currentTarget; // TS knows this is an HTMLFormElement
 
     const data = {
-      name: form.name.value,
-      email: form.email.value,
-      message: form.message.value,
+      name: form.name.value.trim(),         // form elements are accessible by name
+      phone: form.phone.value.trim(),
+      email: form.email.value.trim(),
+      message: form.message.value.trim(),
     };
+
+    const validationErrors = validate(data);
+    if (Object.keys(validationErrors).length) {
+      setErrors(validationErrors);
+      setStatus("invalid");
+      setLoading(false);
+      return;
+    }
 
     try {
       const res = await fetch("/api/contact", {
@@ -33,7 +77,7 @@ export default function ContactPage() {
       } else {
         setStatus("error");
       }
-    } catch (err) {
+    } catch (_) {
       setStatus("error");
     }
 
@@ -43,14 +87,13 @@ export default function ContactPage() {
   return (
     <main className="min-h-screen bg-[#0a0a0a] p-6 md:p-12">
       <div className="max-w-[900px] mx-auto">
-
         {/* HEADER */}
         <div className="mb-12 pb-6 border-b border-white/10">
           <h1 className="text-4xl font-black text-white uppercase tracking-tighter mb-2">
             Contact <span className="text-[#ff3366]">Support</span>
           </h1>
           <p className="text-[#777] text-sm">
-            We're here to help — reach out anytime.
+            We’re here to help — reach out anytime.
           </p>
         </div>
 
@@ -65,73 +108,187 @@ export default function ContactPage() {
             Send Us a Message
           </h3>
 
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            {/* Name */}
-            <div>
-              <label className="block text-[11px] text-[#999] uppercase tracking-widest mb-2">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* ------------- NAME ------------- */}
+            <div
+              className={cn(
+                "relative",
+                errors.name && "animate-shake"
+              )}
+            >
+              <label
+                htmlFor="name"
+                className="block text-[11px] text-[#999] uppercase tracking-widest mb-2"
+              >
                 Your Name
               </label>
               <input
+                id="name"
                 name="name"
                 type="text"
                 required
-                className="w-full bg-black border border-white/10 px-4 py-3 text-white placeholder:text-white/20 text-sm focus:outline-none focus:border-[#ff3366] transition-colors"
+                className={cn(
+                  "w-full bg-black border border-white/10 px-4 py-3 text-white placeholder:text-white/20 text-sm focus:outline-none focus:border-[#ff3366] focus:ring-2 focus:ring-accent transition-colors",
+                  errors.name && "border-red-500"
+                )}
               />
+              {errors.name && (
+                <p className="mt-1 text-sm text-red-400">{errors.name}</p>
+              )}
             </div>
 
-            {/* Email */}
-            <div>
-              <label className="block text-[11px] text-[#999] uppercase tracking-widest mb-2">
+            {/* ------------- PHONE ------------- */}
+            <div
+              className={cn(
+                "relative",
+                errors.phone && "animate-shake"
+              )}
+            >
+              <label
+                htmlFor="phone"
+                className="block text-[11px] text-[#999] uppercase tracking-widest mb-2"
+              >
+                Phone Number
+              </label>
+              <input
+                id="phone"
+                name="phone"
+                type="tel"
+                required
+                placeholder="e.g. +61 2 1234 5678"
+                className={cn(
+                  "w-full bg-black border border-white/10 px-4 py-3 text-white placeholder:text-white/20 text-sm focus:outline-none focus:border-[#ff3366] focus:ring-2 focus:ring-accent transition-colors",
+                  errors.phone && "border-red-500"
+                )}
+              />
+              {errors.phone && (
+                <p className="mt-1 text-sm text-red-400">{errors.phone}</p>
+              )}
+            </div>
+
+            {/* ------------- EMAIL ------------- */}
+            <div
+              className={cn(
+                "relative",
+                errors.email && "animate-shake"
+              )}
+            >
+              <label
+                htmlFor="email"
+                className="block text-[11px] text-[#999] uppercase tracking-widest mb-2"
+              >
                 Email Address
               </label>
               <input
+                id="email"
                 name="email"
                 type="email"
                 required
-                className="w-full bg-black border border-white/10 px-4 py-3 text-white placeholder:text-white/20 text-sm focus:outline-none focus:border-[#ff3366] transition-colors"
+                className={cn(
+                  "w-full bg-black border border-white/10 px-4 py-3 text-white placeholder:text-white/20 text-sm focus:outline-none focus:border-[#ff3366] focus:ring-2 focus:ring-accent transition-colors",
+                  errors.email && "border-red-500"
+                )}
               />
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-400">{errors.email}</p>
+              )}
             </div>
 
-            {/* Message */}
-            <div>
-              <label className="block text-[11px] text-[#999] uppercase tracking-widest mb-2">
+            {/* ------------- MESSAGE ------------- */}
+            <div
+              className={cn(
+                "relative",
+                errors.message && "animate-shake"
+              )}
+            >
+              <label
+                htmlFor="message"
+                className="block text-[11px] text-[#999] uppercase tracking-widest mb-2"
+              >
                 Message
               </label>
               <textarea
+                id="message"
                 name="message"
                 rows={5}
                 required
-                className="w-full bg-black border border-white/10 px-4 py-3 text-white placeholder:text-white/20 text-sm focus:outline-none focus:border-[#ff3366] transition-colors"
+                className={cn(
+                  "w-full bg-black border border-white/10 px-4 py-3 text-white placeholder:text-white/20 text-sm focus:outline-none focus:border-[#ff3366] focus:ring-2 focus:ring-accent transition-colors",
+                  errors.message && "border-red-500"
+                )}
               />
+              {errors.message && (
+                <p className="mt-1 text-sm text-red-400">{errors.message}</p>
+              )}
             </div>
 
-            {/* BUTTON */}
+            {/* ------------- SUBMIT BUTTON ------------- */}
             <button
               type="submit"
               disabled={loading}
-              className={`w-full py-3 rounded-md font-bold uppercase tracking-widest text-xs transition-all
-                ${
-                  loading
-                    ? "bg-[#444] text-white/50 cursor-not-allowed"
-                    : "bg-white text-black hover:bg-[#ff3366] hover:text-white"
-                }
-              `}
+              className={cn(
+                "w-full py-3 rounded-md font-bold uppercase tracking-widest text-xs transition-all flex items-center justify-center gap-2",
+                loading
+                  ? "bg-[#444] text-white/50 cursor-not-allowed"
+                  : "bg-white text-black hover:bg-[#ff3366] hover:text-white"
+              )}
             >
-              {loading ? "Sending..." : "Send Message"}
+              {loading ? (
+                <>
+                  <svg
+                    className="animate-spin-slow w-4 h-4"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8v8H4z"
+                    />
+                  </svg>
+                  Sending…
+                </>
+              ) : (
+                "Send Message"
+              )}
             </button>
           </form>
 
-          {/* STATUS MESSAGES */}
-          {status === "success" && (
-            <p className="text-green-400 text-xs mt-4">
-              ✓ Your message has been sent. We’ll get back to you shortly.
-            </p>
-          )}
-          {status === "error" && (
-            <p className="text-red-400 text-xs mt-4">
-              ⚠ Something went wrong. Please try again later.
-            </p>
-          )}
+          {/* ------------- STATUS MESSAGES ------------- */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={
+              status === "success"
+                ? { opacity: 1 }
+                : status === "error" || status === "invalid"
+                ? { opacity: 1 }
+                : { opacity: 0 }
+            }
+            transition={{ duration: 0.3 }}
+          >
+            {status === "success" && (
+              <p className="text-green-400 text-sm mt-4 animate-fadeIn">
+                ✓ Your message has been sent. We’ll get back to you shortly.
+              </p>
+            )}
+            {status === "error" && (
+              <p className="text-red-400 text-sm mt-4 animate-fadeIn">
+                ⚠ Something went wrong. Please try again later.
+              </p>
+            )}
+            {status === "invalid" && (
+              <p className="text-red-400 text-sm mt-4 animate-fadeIn">
+                ⚠ Please fix the highlighted errors above.
+              </p>
+            )}
+          </motion.div>
         </motion.div>
       </div>
     </main>
