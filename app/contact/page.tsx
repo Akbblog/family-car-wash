@@ -3,9 +3,10 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";   // <-- our helper
+import { cn } from "@/lib/utils";   // <-- helper that merges Tailwind classes
 
 export default function ContactPage() {
+  /* ---------------- State ---------------- */
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<
     "idle" | "success" | "error" | "invalid"
@@ -17,7 +18,7 @@ export default function ContactPage() {
     message?: string;
   }>({});
 
-  /* ---------- helper: client‑side validation ---------- */
+  /* ---------- client‑side validation ---------- */
   const validate = (data: {
     name: string;
     phone: string;
@@ -27,14 +28,10 @@ export default function ContactPage() {
     const errs: typeof errors = {};
 
     if (!data.name.trim()) errs.name = "Name required";
-
-    // simple “phone‑look‑alike” regex (digits, spaces, (), +‑)
     if (!/^[\d\s()+-]{7,15}$/.test(data.phone))
       errs.phone = "Valid phone number required";
-
     if (!data.email.trim() || !/^[^@]+@[^@]+\.[^@]+$/.test(data.email))
       errs.email = "Valid e‑mail required";
-
     if (!data.message.trim()) errs.message = "Message required";
 
     return errs;
@@ -47,15 +44,17 @@ export default function ContactPage() {
     setErrors({});
     setStatus("idle");
 
-    const form = e.currentTarget; // TS knows this is an HTMLFormElement
-
+    /* ---- grab form data safely ---- */
+    const form = e.currentTarget;      // TS knows this is an HTMLFormElement
+    const formData = new FormData(form);
     const data = {
-      name: form.name.value.trim(),         // form elements are accessible by name
-      phone: form.phone.value.trim(),
-      email: form.email.value.trim(),
-      message: form.message.value.trim(),
+      name: formData.get("name") as string,
+      phone: formData.get("phone") as string,
+      email: formData.get("email") as string,
+      message: formData.get("message") as string,
     };
 
+    /* ---- validation ---- */
     const validationErrors = validate(data);
     if (Object.keys(validationErrors).length) {
       setErrors(validationErrors);
@@ -64,6 +63,7 @@ export default function ContactPage() {
       return;
     }
 
+    /* ---- API call ---- */
     try {
       const res = await fetch("/api/contact", {
         method: "POST",
@@ -77,13 +77,14 @@ export default function ContactPage() {
       } else {
         setStatus("error");
       }
-    } catch (_) {
+    } catch {
       setStatus("error");
     }
 
     setLoading(false);
   }
 
+  /* ---------------- Render ---------------- */
   return (
     <main className="min-h-screen bg-[#0a0a0a] p-6 md:p-12">
       <div className="max-w-[900px] mx-auto">
@@ -109,7 +110,7 @@ export default function ContactPage() {
           </h3>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* ------------- NAME ------------- */}
+            {/* NAME */}
             <div
               className={cn(
                 "relative",
@@ -137,7 +138,7 @@ export default function ContactPage() {
               )}
             </div>
 
-            {/* ------------- PHONE ------------- */}
+            {/* PHONE */}
             <div
               className={cn(
                 "relative",
@@ -166,7 +167,7 @@ export default function ContactPage() {
               )}
             </div>
 
-            {/* ------------- EMAIL ------------- */}
+            {/* EMAIL */}
             <div
               className={cn(
                 "relative",
@@ -194,7 +195,7 @@ export default function ContactPage() {
               )}
             </div>
 
-            {/* ------------- MESSAGE ------------- */}
+            {/* MESSAGE */}
             <div
               className={cn(
                 "relative",
@@ -222,7 +223,7 @@ export default function ContactPage() {
               )}
             </div>
 
-            {/* ------------- SUBMIT BUTTON ------------- */}
+            {/* SUBMIT BUTTON */}
             <button
               type="submit"
               disabled={loading}
@@ -261,7 +262,7 @@ export default function ContactPage() {
             </button>
           </form>
 
-          {/* ------------- STATUS MESSAGES ------------- */}
+          {/* STATUS MESSAGES */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={
