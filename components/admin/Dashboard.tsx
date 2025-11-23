@@ -5,6 +5,9 @@ import { useState, useEffect, FormEvent } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
+// small helper to safely read optional props or provide a fallback
+const propsOr = <T,>(v: T | undefined, fallback: T): T => (typeof v === "undefined" ? fallback : v);
+
 /* ----------------------------------------------------------------- */
 /*  Types (unchanged)                                                */
 /* ----------------------------------------------------------------- */
@@ -344,6 +347,11 @@ type UserModalProps = {
   cars: Car[];
   createCar: (payload: CarPayload) => Promise<void>;
   deleteCar: (id: string) => Promise<void>;
+  // pagination controls passed from parent dashboard
+  carsPage?: number;
+  carsTotalPages?: number;
+  setCarsPage?: React.Dispatch<React.SetStateAction<number>>;
+  refreshCars?: (page?: number) => Promise<void>;
 };
 const UserModal = ({
   user,
@@ -355,6 +363,10 @@ const UserModal = ({
   cars,
   createCar,
   deleteCar,
+  carsPage,
+  carsTotalPages,
+  setCarsPage,
+  refreshCars,
 }: UserModalProps) => {
   const [carForm, setCarForm] = useState({
     make: "",
@@ -586,6 +598,80 @@ const UserModal = ({
               ))}
             </div>
 
+            {/* cars pagination controls (if provided) */}
+            {(typeof (UserModal as any) !== 'undefined') && (
+              <div className="mt-2 flex items-center justify-between">
+                <div className="text-xs text-gray-600 dark:text-gray-400">
+                  Page {propsOr(carsPage, 1)} of {propsOr(carsTotalPages, 1)}
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const first = 1;
+                      propsOr(setCarsPage, (n: number) => {}) (first);
+                      await propsOr(refreshCars, async (p?: number) => {}) (first);
+                    }}
+                    disabled={propsOr(carsPage, 1) <= 1}
+                    className={`rounded px-2 py-0.5 text-xs font-medium ${propsOr(carsPage, 1) <= 1 ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-[var(--accent)] text-white hover:opacity-90'}`}
+                  >
+                    First
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const prev = Math.max(1, (propsOr(carsPage, 1) || 1) - 1);
+                      propsOr(setCarsPage, (n: number) => {}) (prev);
+                      await propsOr(refreshCars, async (p?: number) => {}) (prev);
+                    }}
+                    disabled={propsOr(carsPage, 1) <= 1}
+                    className={`rounded px-2 py-0.5 text-xs font-medium ${propsOr(carsPage, 1) <= 1 ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-[var(--accent)] text-white hover:opacity-90'}`}
+                  >
+                    Prev
+                  </button>
+
+                  {/* direct page input */}
+                  <input
+                    type="number"
+                    min={1}
+                    max={propsOr(carsTotalPages, 1)}
+                    value={propsOr(carsPage, 1)}
+                    onChange={async (e) => {
+                      const v = Math.max(1, Math.min(propsOr(carsTotalPages, 1), Number(e.target.value || 1)));
+                      propsOr(setCarsPage, (n: number) => {}) (v);
+                      await propsOr(refreshCars, async (p?: number) => {}) (v);
+                    }}
+                    className="w-16 rounded border border-gray-300 bg-white dark:bg-gray-900 p-1 text-xs text-gray-900 dark:text-gray-100"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const next = Math.min(propsOr(carsTotalPages, 1), (propsOr(carsPage, 1) || 1) + 1);
+                      propsOr(setCarsPage, (n: number) => {}) (next);
+                      await propsOr(refreshCars, async (p?: number) => {}) (next);
+                    }}
+                    disabled={propsOr(carsPage, 1) >= propsOr(carsTotalPages, 1)}
+                    className={`rounded px-2 py-0.5 text-xs font-medium ${propsOr(carsPage, 1) >= propsOr(carsTotalPages, 1) ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-[var(--accent)] text-white hover:opacity-90'}`}
+                  >
+                    Next
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const last = propsOr(carsTotalPages, 1);
+                      propsOr(setCarsPage, (n: number) => {}) (last);
+                      await propsOr(refreshCars, async (p?: number) => {}) (last);
+                    }}
+                    disabled={propsOr(carsPage, 1) >= propsOr(carsTotalPages, 1)}
+                    className={`rounded px-2 py-0.5 text-xs font-medium ${propsOr(carsPage, 1) >= propsOr(carsTotalPages, 1) ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-[var(--accent)] text-white hover:opacity-90'}`}
+                  >
+                    Last
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* add‑car form (compact, responsive) */}
             <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-4">
               <input
@@ -797,6 +883,14 @@ export function Dashboard() {
   });
   const [users, setUsers] = useState<User[]>([]);
   const [cars, setCars] = useState<Car[]>([]);
+  // Pagination state for users and cars (default limit 25)
+  const [usersPage, setUsersPage] = useState<number>(1);
+  const [usersTotalPages, setUsersTotalPages] = useState<number>(1);
+  const USERS_LIMIT = 25;
+
+  const [carsPage, setCarsPage] = useState<number>(1);
+  const [carsTotalPages, setCarsTotalPages] = useState<number>(1);
+  const CARS_LIMIT = 25;
 
   // create‑new‑user
   const [showCreate, setShowCreate] = useState(false);
@@ -826,35 +920,42 @@ export function Dashboard() {
   useEffect(() => {
     const load = async () => {
       try {
-        const [statsRes, usersRes, carsRes] = await Promise.all([
-          fetch("/api/admin/stats"),
-          fetch("/api/admin/users"),
-          fetch("/api/admin/cars"),
-        ]);
+        // Load stats first, then paginated lists
+        const statsRes = await fetch("/api/admin/stats");
         setStats(await statsRes.json());
-        setUsers(await usersRes.json());
-        setCars(await carsRes.json());
+
+        // Load first page for users and cars
+        await Promise.all([refreshUsers(1), refreshCars(1)]);
       } catch (e) {
         console.error(e);
         showToast("Failed to load admin data", "error");
       }
     };
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const refreshUsers = async () => {
+  const refreshUsers = async (page: number = usersPage) => {
     try {
-      const r = await fetch("/api/admin/users");
-      setUsers(await r.json());
+      const r = await fetch(`/api/admin/users?page=${page}&limit=${USERS_LIMIT}`);
+      const json = await r.json();
+      // API returns { data, meta }
+      setUsers(json.data || []);
+      setUsersPage(json.meta?.page ?? page);
+      setUsersTotalPages(json.meta?.totalPages ?? 1);
     } catch (e) {
       console.error(e);
       showToast("Failed to refresh users", "error");
     }
   };
-  const refreshCars = async () => {
+  const refreshCars = async (page?: number) => {
     try {
-      const r = await fetch("/api/admin/cars");
-      setCars(await r.json());
+      const p = page ?? carsPage;
+      const r = await fetch(`/api/admin/cars?page=${p}&limit=${CARS_LIMIT}`);
+      const json = await r.json();
+      setCars(json.data || []);
+      setCarsPage(json.meta?.page ?? p);
+      setCarsTotalPages(json.meta?.totalPages ?? 1);
     } catch (e) {
       console.error(e);
       showToast("Failed to refresh cars", "error");
@@ -988,34 +1089,54 @@ export function Dashboard() {
 
   // Car CRUD (used inside the full user modal)
   const createCar = async (payload: CarPayload) => {
+    // Create a new car for a user. This function is intentionally small
+    // and performs minimal validation — serverside validation still runs
+    // in the API route. We return after refreshing cached lists so the
+    // UI shows fresh data.
     try {
       const r = await fetch("/api/admin/cars", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      if (!r.ok) throw new Error(await r.text());
+      if (!r.ok) {
+        // The route returns JSON errors; prefer reading text so we
+        // present something readable in toasts. Caller may also throw.
+        const txt = await r.text();
+        throw new Error(txt || `Failed to create car (${r.status})`);
+      }
+
+      // Refresh local caches after creation. This keeps the client
+      // in sync without relying on optimistic updates.
       await refreshCars();
       await refreshUsers();
+      showToast("Car added");
     } catch (e) {
-      console.error(e);
-      showToast("Failed to add car", "error");
+      console.error("createCar error", e);
+      showToast((e as any)?.message ?? "Failed to add car", "error");
       throw e;
     }
   };
   const deleteCar = async (id: string) => {
+    // Delete a car by id. The route expects JSON { id } in the body.
+    // We avoid silent failures and bubble errors so the caller can
+    // inform the user appropriately.
     try {
       const r = await fetch("/api/admin/cars", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id }),
       });
-      if (!r.ok) throw new Error(await r.text());
+      if (!r.ok) {
+        const txt = await r.text();
+        throw new Error(txt || `Failed to delete car (${r.status})`);
+      }
       await refreshCars();
       await refreshUsers();
+      showToast("Car deleted");
     } catch (e) {
-      console.error(e);
-      showToast("Failed to delete car", "error");
+      console.error("deleteCar error", e);
+      showToast((e as any)?.message ?? "Failed to delete car", "error");
       throw e;
     }
   };
@@ -1113,6 +1234,57 @@ export function Dashboard() {
           onDeleteUser={deleteUser}
           onExpandUser={openModal}
         />
+
+        {/* Pagination controls for users (First / Prev / Page input / Next / Last) */}
+        <div className="mt-4 flex items-center justify-between">
+          <div className="text-sm text-gray-600 dark:text-gray-400">
+            Page {usersPage} of {usersTotalPages}
+          </div>
+          <div className="flex gap-2 items-center">
+            <button
+              onClick={() => refreshUsers(1)}
+              disabled={usersPage <= 1}
+              className={`rounded px-3 py-1 text-sm font-medium ${usersPage <= 1 ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-[var(--accent)] text-white hover:opacity-90'}`}
+            >
+              First
+            </button>
+            <button
+              onClick={() => refreshUsers(Math.max(1, usersPage - 1))}
+              disabled={usersPage <= 1}
+              className={`rounded px-3 py-1 text-sm font-medium ${usersPage <= 1 ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-[var(--accent)] text-white hover:opacity-90'}`}
+            >
+              Prev
+            </button>
+
+            <input
+              type="number"
+              min={1}
+              max={usersTotalPages}
+              value={usersPage}
+              onChange={(e) => {
+                const v = Math.max(1, Math.min(usersTotalPages, Number(e.target.value || 1)));
+                setUsersPage(v);
+                refreshUsers(v);
+              }}
+              className="w-20 rounded border border-gray-300 bg-white dark:bg-gray-900 p-1 text-sm text-gray-900 dark:text-gray-100"
+            />
+
+            <button
+              onClick={() => refreshUsers(Math.min(usersTotalPages, usersPage + 1))}
+              disabled={usersPage >= usersTotalPages}
+              className={`rounded px-3 py-1 text-sm font-medium ${usersPage >= usersTotalPages ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-[var(--accent)] text-white hover:opacity-90'}`}
+            >
+              Next
+            </button>
+            <button
+              onClick={() => refreshUsers(usersTotalPages)}
+              disabled={usersPage >= usersTotalPages}
+              className={`rounded px-3 py-1 text-sm font-medium ${usersPage >= usersTotalPages ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-[var(--accent)] text-white hover:opacity-90'}`}
+            >
+              Last
+            </button>
+          </div>
+        </div>
       </section>
 
       {/* Edit‑User modal (compact) */}
@@ -1137,6 +1309,10 @@ export function Dashboard() {
         cars={cars}
         createCar={createCar}
         deleteCar={deleteCar}
+        carsPage={carsPage}
+        carsTotalPages={carsTotalPages}
+        setCarsPage={setCarsPage}
+        refreshCars={refreshCars}
       />
     </main>
   );

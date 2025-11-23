@@ -50,6 +50,9 @@ export async function connectDB(): Promise<typeof mongoose> {
     cached.promise = mongoose
       .connect(MONGODB_URI, opts)
       .then((instance) => {
+        // Log connection only once when a new connection is created.
+        // This helps debugging in development while avoiding noisy logs
+        // when the module is reloaded by HMR.
         console.log("✅ New connection to MongoDB established");
         return instance;
       });
@@ -70,3 +73,15 @@ export async function connectDB(): Promise<typeof mongoose> {
    4️⃣ Export the helper conventionally
    ───────────────────────────────────────────────────────────────────── */
 export default connectDB;
+
+/*
+Notes / optimization tips:
+- We use a global cache to avoid creating multiple connections during
+  hot-reloads (Next.js dev). In production, the same pattern avoids
+  connection storms during lambda cold starts if you reuse a global.
+- The `bufferCommands: false` option prevents queuing commands when
+  the driver is not connected which can surface errors earlier.
+- If you need lower latency for serverless environments, consider
+  switching to the native MongoDB `MongoClient` with a connection
+  pooling strategy suited for your hosting provider.
+*/
