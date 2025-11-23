@@ -1,528 +1,1143 @@
-// ...existing code...
-"use client"; // <-- server component page using the client guard
+// src/app/admin/Dashboard.tsx
+"use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { useSession, signOut } from "next-auth/react";
-import { Stats } from "./Stats";
 import { useRouter } from "next/navigation";
 
-/**
- * Main admin dashboard page.
- * All data is loaded via the protected `/api/admin/*` endpoints.
- */
+/* ----------------------------------------------------------------- */
+/*  Types (unchanged)                                                */
+/* ----------------------------------------------------------------- */
+type User = {
+  id?: string;
+  _id?: string;
+  name?: string;
+  email?: string;
+  role?: string;
+  address?: string;
+  city?: string;
+  zip?: string;
+  phone?: string;
+  notes?: string;
+  preferredDay1?: string;
+  preferredTime1?: string;
+  preferredDay2?: string;
+  preferredTime2?: string;
+  membershipEnabled?: boolean;
+  isSubscribed?: boolean;
+  stripeCustomerId?: string;
+  createdAt?: string;
+};
+
+type Car = {
+  id?: string;
+  _id?: string;
+  make?: string;
+  model?: string;
+  licensePlate?: string;
+  color?: string;
+  userId?: string | { id?: string; _id?: string };
+  user?: string | { id?: string; _id?: string };
+};
+
+/* ----------------------------------------------------------------- */
+/*  UI helpers – compact & consistent padding                        */
+/* ----------------------------------------------------------------- */
+
+/* ---------------------- Toast ------------------------------------- */
+type ToastProps = {
+  message: string;
+  type?: "success" | "error";
+  onClose: () => void;
+};
+const Toast = ({ message, type = "success", onClose }: ToastProps) => {
+  const border = type === "success" ? "border-green-500" : "border-red-500";
+  return (
+    <div
+      role="alert"
+      className={`
+        fixed bottom-4 right-4 z-50 max-w-xs rounded-xl border-l-4 ${border}
+        bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100 p-3 shadow-lg
+        animate-[slide-in-bottom_0.2s_ease-out]
+      `}
+    >
+      <div className="flex items-center justify-between">
+        <span>{message}</span>
+        <button
+          onClick={onClose}
+          aria-label="Close toast"
+          className="ml-3 rounded-full bg-gray-200/40 p-0.5 hover:bg-gray-200/60"
+        >
+          ×
+        </button>
+      </div>
+    </div>
+  );
+};
+
+/* ---------------------- Stat Card --------------------------------- */
+type StatProps = { label: string; value: number | string };
+const StatCard = ({ label, value }: StatProps) => (
+  <div className="rounded-md bg-white dark:bg-gray-800 p-4 shadow-sm border border-gray-200 dark:border-gray-700 text-center">
+    <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{label}</p>
+    <p className="mt-1 text-2xl font-semibold text-gray-900 dark:text-gray-100">
+      {value}
+    </p>
+  </div>
+);
+
+/* ---------------------- Card -------------------------------------- */
+type CardProps = { children: React.ReactNode; className?: string };
+const Card = ({ children, className }: CardProps) => (
+  <div
+    className={`
+      rounded-md bg-white dark:bg-gray-800 p-4 shadow-sm border border-gray-200 dark:border-gray-700
+      ${className ?? ""}
+    `}
+  >
+    {children}
+  </div>
+);
+
+/* ---------------------- Modal (responsive) ------------------------ */
+type ModalProps = {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  children: React.ReactNode;
+  actions?: React.ReactNode;
+  /** size is only about the **max‑width** on desktop; on mobile it always stretches full‑width */
+  size?: "sm" | "md" | "lg";
+};
+const Modal = ({
+  open,
+  onClose,
+  title,
+  children,
+  actions,
+  size = "md",
+}: ModalProps) => {
+  if (!open) return null;
+
+  // map size → max‑width for desktop
+  const sizeMap = {
+    sm: "max-w-sm",
+    md: "max-w-md",
+    lg: "max-w-3xl",
+  }[size];
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Escape") onClose();
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      onKeyDown={handleKeyDown}
+    >
+      {/* backdrop */}
+      <div
+        className="absolute inset-0 bg-gray-900/70"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+      {/* panel – mobile full‑width, desktop capped by sizeMap */}
+      <div
+        className={`
+          relative z-10 w-full max-w-full ${sizeMap} md:max-w-${sizeMap.split("-")[1]}
+          rounded-xl bg-white dark:bg-gray-900 shadow-2xl
+          max-h-[90vh] overflow-y-auto
+        `}
+      >
+        <header className="flex items-center justify-between rounded-t-xl bg-[var(--accent)] p-3 text-white">
+          <h3 className="text-lg font-semibold">{title}</h3>
+          <button
+            onClick={onClose}
+            className="rounded bg-white/10 px-2 py-0.5 hover:bg-white/20"
+            aria-label="Close modal"
+          >
+            ✕
+          </button>
+        </header>
+        <section className="p-4">{children}</section>
+
+        {actions && (
+          <footer className="flex justify-end gap-3 border-t border-gray-200 dark:border-gray-700 p-3">
+            {actions}
+          </footer>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/* ---------------------- User form (new user) ---------------------- */
+type UserFormProps = {
+  form: { name: string; email: string; role: string };
+  setForm: React.Dispatch<
+    React.SetStateAction<{ name: string; email: string; role: string }>
+  >;
+  loading: boolean;
+  onSubmit: (e?: FormEvent) => void;
+  onCancel: () => void;
+  isEdit: boolean;
+};
+const UserForm = ({
+  form,
+  setForm,
+  loading,
+  onSubmit,
+  onCancel,
+  isEdit,
+}: UserFormProps) => {
+  const inputCls =
+    "w-full rounded border border-gray-300 bg-white dark:bg-gray-900 dark:border-gray-600 p-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]";
+
+  return (
+    <form onSubmit={onSubmit} className="space-y-3">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <input
+          required
+          value={form.name}
+          onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
+          placeholder="Name"
+          className={inputCls}
+        />
+        <input
+          required
+          type="email"
+          value={form.email}
+          onChange={(e) => setForm((s) => ({ ...s, email: e.target.value }))}
+          placeholder="Email"
+          className={inputCls}
+        />
+        <select
+          value={form.role}
+          onChange={(e) => setForm((s) => ({ ...s, role: e.target.value }))}
+          className={inputCls}
+        >
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+
+      <div className="flex gap-2">
+        <button
+          type="submit"
+          disabled={loading}
+          className={`
+            flex-1 rounded bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white
+            hover:opacity-90 disabled:opacity-50
+          `}
+        >
+          {isEdit
+            ? loading
+              ? "Saving…"
+              : "Save"
+            : loading
+            ? "Creating…"
+            : "Create"}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex-1 rounded bg-gray-200 dark:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+};
+
+/* ---------------------- Edit‑User modal (compact) ----------------- */
+type EditUserModalProps = {
+  open: boolean;
+  onClose: () => void;
+  user: User | null;
+  form: { name: string; email: string; role: string };
+  setForm: React.Dispatch<
+    React.SetStateAction<{ name: string; email: string; role: string }>
+  >;
+  loading: boolean;
+  onSave: () => void;
+};
+const EditUserModal = ({
+  open,
+  onClose,
+  user,
+  form,
+  setForm,
+  loading,
+  onSave,
+}: EditUserModalProps) => {
+  if (!user) return null;
+  const inputCls =
+    "w-full rounded border border-gray-300 bg-white dark:bg-gray-900 dark:border-gray-600 p-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]";
+
+  return (
+    <Modal
+      open={open}
+      onClose={onClose}
+      title="Edit user"
+      size="sm"
+      actions={
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={loading}
+          className={`
+            rounded bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white
+            hover:opacity-90 disabled:opacity-50
+          `}
+        >
+          {loading ? "Saving…" : "Save"}
+        </button>
+      }
+    >
+      <div className="space-y-3">
+        <input
+          required
+          value={form.name}
+          onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
+          placeholder="Name"
+          className={inputCls}
+        />
+        <input
+          required
+          type="email"
+          value={form.email}
+          onChange={(e) => setForm((s) => ({ ...s, email: e.target.value }))}
+          placeholder="Email"
+          className={inputCls}
+        />
+        <select
+          value={form.role}
+          onChange={(e) => setForm((s) => ({ ...s, role: e.target.value }))}
+          className={inputCls}
+        >
+          <option value="user">User</option>
+          <option value="editor">Editor</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+    </Modal>
+  );
+};
+
+/* ---------------------- Full‑User modal (expand) ----------------- */
+type CarPayload = {
+  make: string;
+  model: string;
+  licensePlate: string;
+  color?: string;
+  userId: string;
+};
+
+type UserModalProps = {
+  user: User | null;
+  form: any;
+  setForm: React.Dispatch<React.SetStateAction<any>>;
+  loading: boolean;
+  onSave: (e?: FormEvent) => void;
+  onClose: () => void;
+  cars: Car[];
+  createCar: (payload: CarPayload) => Promise<void>;
+  deleteCar: (id: string) => Promise<void>;
+};
+const UserModal = ({
+  user,
+  form,
+  setForm,
+  loading,
+  onSave,
+  onClose,
+  cars,
+  createCar,
+  deleteCar,
+}: UserModalProps) => {
+  const [carForm, setCarForm] = useState({
+    make: "",
+    model: "",
+    licensePlate: "",
+    color: "",
+  });
+  const [carLoading, setCarLoading] = useState(false);
+
+  if (!user) return null;
+
+  const ownerId = user.id ?? user._id;
+  const ownedCars = cars.filter((c) => {
+    const raw = c.userId ?? c.user ?? null;
+    let id = raw;
+    if (raw && typeof raw === "object")
+      id = (raw as any)._id ?? (raw as any).id ?? raw;
+    return String(id) === String(ownerId);
+  });
+
+  const handleAddCar = async () => {
+    if (!carForm.make || !carForm.model || !carForm.licensePlate) {
+      alert("Make, model and license plate are required");
+      return;
+    }
+    if (!ownerId) {
+      alert("Missing user id");
+      return;
+    }
+    setCarLoading(true);
+    try {
+      await createCar({ ...carForm, userId: ownerId });
+      setCarForm({ make: "", model: "", licensePlate: "", color: "" });
+    } catch (e) {
+      console.error(e);
+      alert((e as any).message ?? "Failed to add car");
+    }
+    setCarLoading(false);
+  };
+
+  const inputCls =
+    "w-full rounded border border-gray-300 bg-white dark:bg-gray-900 dark:border-gray-600 p-2 text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]";
+
+  return (
+    <Modal open={!!user} onClose={onClose} title={form.name || "User"} size="lg">
+      <form className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        {/* ---------- LEFT: basic user fields ---------- */}
+        <div className="space-y-3">
+          <label className="block">
+            <span className="text-gray-600">Name</span>
+            <input
+              value={form.name}
+              onChange={(e) => setForm((s: any) => ({ ...s, name: e.target.value }))}
+              className={inputCls}
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-gray-600">Email</span>
+            <input
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm((s: any) => ({ ...s, email: e.target.value }))}
+              className={inputCls}
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-gray-600">Phone</span>
+            <input
+              value={form.phone}
+              onChange={(e) => setForm((s: any) => ({ ...s, phone: e.target.value }))}
+              className={inputCls}
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-gray-600">Address</span>
+            <input
+              value={form.address}
+              onChange={(e) => setForm((s: any) => ({ ...s, address: e.target.value }))}
+              className={inputCls}
+            />
+          </label>
+
+          <div className="grid grid-cols-2 gap-2">
+            <label className="block">
+              <span className="text-gray-600">City</span>
+              <input
+                value={form.city}
+                onChange={(e) => setForm((s: any) => ({ ...s, city: e.target.value }))}
+                className={inputCls}
+              />
+            </label>
+
+            <label className="block">
+              <span className="text-gray-600">ZIP</span>
+              <input
+                value={form.zip}
+                onChange={(e) => setForm((s: any) => ({ ...s, zip: e.target.value }))}
+                className={inputCls}
+              />
+            </label>
+          </div>
+
+          <label className="block">
+            <span className="text-gray-600">Notes</span>
+            <textarea
+              rows={2}
+              value={form.notes}
+              onChange={(e) => setForm((s: any) => ({ ...s, notes: e.target.value }))}
+              className={inputCls}
+            />
+          </label>
+        </div>
+
+        {/* ---------- RIGHT: preferences, role, cars ---------- */}
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-2">
+            <label className="block">
+              <span className="text-gray-600">Pref Day 1</span>
+              <input
+                value={form.preferredDay1}
+                onChange={(e) => setForm((s: any) => ({ ...s, preferredDay1: e.target.value }))}
+                className={inputCls}
+              />
+            </label>
+
+            <label className="block">
+              <span className="text-gray-600">Pref Time 1</span>
+              <input
+                value={form.preferredTime1}
+                onChange={(e) => setForm((s: any) => ({ ...s, preferredTime1: e.target.value }))}
+                className={inputCls}
+              />
+            </label>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <label className="block">
+              <span className="text-gray-600">Pref Day 2</span>
+              <input
+                value={form.preferredDay2}
+                onChange={(e) => setForm((s: any) => ({ ...s, preferredDay2: e.target.value }))}
+                className={inputCls}
+              />
+            </label>
+
+            <label className="block">
+              <span className="text-gray-600">Pref Time 2</span>
+              <input
+                value={form.preferredTime2}
+                onChange={(e) => setForm((s: any) => ({ ...s, preferredTime2: e.target.value }))}
+                className={inputCls}
+              />
+            </label>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-1 text-gray-600">
+              <input
+                type="checkbox"
+                checked={form.membershipEnabled}
+                onChange={(e) =>
+                  setForm((s: any) => ({ ...s, membershipEnabled: e.target.checked }))
+                }
+                className="rounded bg-gray-200 dark:bg-gray-600 text-[var(--accent)] focus:ring-[var(--accent)]"
+              />
+              Membership enabled
+            </label>
+
+            <label className="flex items-center gap-1 text-gray-600">
+              <input
+                type="checkbox"
+                checked={form.isSubscribed}
+                onChange={(e) =>
+                  setForm((s: any) => ({ ...s, isSubscribed: e.target.checked }))
+                }
+                className="rounded bg-gray-200 dark:bg-gray-600 text-[var(--accent)] focus:ring-[var(--accent)]"
+              />
+              Subscribed
+            </label>
+          </div>
+
+          <label className="block">
+            <span className="text-gray-600">Role</span>
+            <select
+              value={form.role}
+              onChange={(e) => setForm((s: any) => ({ ...s, role: e.target.value }))}
+              className={inputCls}
+            >
+              <option value="user">User</option>
+              <option value="editor">Editor</option>
+              <option value="admin">Admin</option>
+            </select>
+          </label>
+
+          {/* --------------- Cars owned by this user --------------- */}
+          <div className="mt-3">
+            <h4 className="mb-2 text-sm font-medium text-gray-700">Cars owned</h4>
+
+            {/* existing car list */}
+            <div className="space-y-1">
+              {ownedCars.map((c) => (
+                <div
+                  key={c.id ?? c._id}
+                  className="flex items-center justify-between rounded bg-gray-100 dark:bg-gray-800 p-1.5 text-xs"
+                >
+                  <div>
+                    <div className="font-medium text-gray-900 dark:text-gray-100">
+                      {c.make} {c.model}
+                    </div>
+                    <div className="text-gray-600 dark:text-gray-400">
+                      {c.licensePlate}
+                      {c.color ? ` • ${c.color}` : ""}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!confirm("Delete this car?")) return;
+                      await deleteCar(c.id ?? c._id!);
+                    }}
+                    className="rounded bg-red-600 px-2 py-0.5 text-xs font-medium text-white hover:bg-red-700"
+                  >
+                    Delete
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* add‑car form (compact, responsive) */}
+            <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-4">
+              <input
+                placeholder="Make"
+                value={carForm.make}
+                onChange={(e) => setCarForm((s) => ({ ...s, make: e.target.value }))}
+                className={inputCls}
+              />
+              <input
+                placeholder="Model"
+                value={carForm.model}
+                onChange={(e) => setCarForm((s) => ({ ...s, model: e.target.value }))}
+                className={inputCls}
+              />
+              <input
+                placeholder="License"
+                value={carForm.licensePlate}
+                onChange={(e) => setCarForm((s) => ({ ...s, licensePlate: e.target.value }))}
+                className={inputCls}
+              />
+              <div className="flex gap-2">
+                <input
+                  placeholder="Color (opt.)"
+                  value={carForm.color}
+                  onChange={(e) => setCarForm((s) => ({ ...s, color: e.target.value }))}
+                  className={inputCls}
+                />
+                <button
+                  type="button"
+                  disabled={carLoading}
+                  onClick={handleAddCar}
+                  className="rounded bg-[var(--accent)] px-3 py-1 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
+                >
+                  {carLoading ? "Adding…" : "Add"}
+                </button>
+              </div>
+            </div>
+          </div>
+          {/* ------------------------------------------------------ */}
+        </div>
+      </form>
+    </Modal>
+  );
+};
+
+/* ---------------------- Users table (compact) -------------------- */
+type UserTableProps = {
+  users: User[];
+  cars: Car[];
+  onEditUser: (u: User) => void;
+  onDeleteUser: (id: string) => void;
+  onExpandUser: (u: User) => void;
+};
+const UserTable = ({
+  users,
+  cars,
+  onEditUser,
+  onDeleteUser,
+  onExpandUser,
+}: UserTableProps) => {
+  // Build a map of userId → car count for fast lookup
+  const carCountMap = new Map<string, number>();
+  cars.forEach((c) => {
+    const raw = c.userId ?? c.user ?? null;
+    let id = raw;
+    if (raw && typeof raw === "object")
+      id = (raw as any)._id ?? (raw as any).id ?? raw;
+    const key = String(id);
+    carCountMap.set(key, (carCountMap.get(key) ?? 0) + 1);
+  });
+
+  const iconBtn = (
+    className: string,
+    aria: string,
+    onClick: () => void,
+    icon: React.ReactNode,
+  ) => (
+    <button
+      onClick={onClick}
+      className={className}
+      aria-label={aria}
+      type="button"
+    >
+      {icon}
+    </button>
+  );
+
+  return (
+    <div className="overflow-x-auto rounded-md border border-gray-200 dark:border-gray-700">
+      <table className="w-full table-auto text-sm">
+        <thead className="bg-gray-100 dark:bg-gray-800">
+          <tr>
+            <th className="p-2 text-left font-medium text-gray-600 dark:text-gray-300">
+              Name
+            </th>
+            <th className="p-2 text-left font-medium text-gray-600 dark:text-gray-300">
+              Email
+            </th>
+            <th className="p-2 text-center font-medium text-gray-600 dark:text-gray-300">
+              Role
+            </th>
+            <th className="p-2 text-center font-medium text-gray-600 dark:text-gray-300">
+              Cars
+            </th>
+            <th className="p-2 text-center font-medium text-gray-600 dark:text-gray-300">
+              Actions
+            </th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+          {users.map((u) => {
+            const uid = u.id ?? u._id!;
+            const carCount = carCountMap.get(String(uid)) ?? 0;
+            return (
+              <tr key={uid} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                <td className="p-2 font-medium text-gray-900 dark:text-gray-100">
+                  {u.name ?? "—"}
+                </td>
+                <td className="p-2 text-gray-600 dark:text-gray-300">{u.email}</td>
+                <td className="p-2 text-center text-gray-600 dark:text-gray-300">
+                  {u.role}
+                </td>
+                <td className="p-2 text-center text-gray-600 dark:text-gray-300">
+                  {carCount}
+                </td>
+                <td className="p-2 text-center">
+                  <div className="flex items-center justify-center gap-2">
+                    {/* Edit – opens compact edit modal */}
+                    {iconBtn(
+                      "rounded bg-gray-200 dark:bg-gray-700 p-1 hover:bg-gray-300 dark:hover:bg-gray-600",
+                      "Edit user",
+                      () => onEditUser(u),
+                      <svg
+                        className="h-4 w-4 text-gray-600 dark:text-gray-300"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M12 20h9" />
+                        <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                      </svg>,
+                    )}
+
+                    {/* Expand – opens full‑screen modal */}
+                    {iconBtn(
+                      "rounded bg-[var(--accent)] p-1 text-white hover:opacity-90",
+                      "Expand user",
+                      () => onExpandUser(u),
+                      <svg
+                        className="h-4 w-4"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <circle cx="12" cy="12" r="3" />
+                        <path d="M2 12h3m6-9v3m6 12h3m-12-6h12" />
+                      </svg>,
+                    )}
+
+                    {/* Delete */}
+                    {iconBtn(
+                      "rounded bg-red-600 p-1 text-white hover:bg-red-700",
+                      "Delete user",
+                      () => onDeleteUser(uid),
+                      <svg
+                        className="h-4 w-4"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <polyline points="3 6 5 6 21 6" />
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                        <line x1="10" y1="11" x2="10" y2="17" />
+                        <line x1="14" y1="11" x2="14" y2="17" />
+                      </svg>,
+                    )}
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+/* ----------------------------------------------------------------- */
+/*  Main Dashboard component – compact & responsive                  */
+/* ----------------------------------------------------------------- */
 export function Dashboard() {
   const router = useRouter();
   const { data: session } = useSession();
 
-  // local state
+  /* ---------------------- state ---------------------- */
   const [stats, setStats] = useState({
     userCount: 0,
     activeUsers: 0,
     carCount: 0,
   });
+  const [users, setUsers] = useState<User[]>([]);
+  const [cars, setCars] = useState<Car[]>([]);
 
-  const [users, setUsers] = useState<any[]>([]);
-  const [cars, setCars] = useState<any[]>([]);
-
-  // UI state for user CRUD
-  const [editingUser, setEditingUser] = useState<any | null>(null);
+  // create‑new‑user
   const [showCreate, setShowCreate] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", role: "user" });
+  const [createForm, setCreateForm] = useState({ name: "", email: "", role: "user" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Modal state for expanded user profile
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalUser, setModalUser] = useState<any | null>(null);
-  const [modalForm, setModalForm] = useState<any | null>(null);
+
+  // edit‑user modal (compact)
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [editForm, setEditForm] = useState({ name: "", email: "", role: "user" });
+
+  // full‑user modal (expand)
+  const [modalUser, setModalUser] = useState<User | null>(null);
+  const [modalForm, setModalForm] = useState<any>(null);
   const [modalLoading, setModalLoading] = useState(false);
 
-  // load data when the component mounts
+  // toast handling
+  const [toast, setToast] = useState<{
+    msg: string;
+    type?: "success" | "error";
+  } | null>(null);
+  const showToast = (msg: string, type: "success" | "error" = "success") =>
+    setToast({ msg, type });
+
+  /* ---------------------- data load ---------------------- */
   useEffect(() => {
-    async function loadData() {
+    const load = async () => {
       try {
         const [statsRes, usersRes, carsRes] = await Promise.all([
           fetch("/api/admin/stats"),
           fetch("/api/admin/users"),
           fetch("/api/admin/cars"),
         ]);
-
         setStats(await statsRes.json());
         setUsers(await usersRes.json());
         setCars(await carsRes.json());
-      } catch (err) {
-        console.error("Failed loading admin data", err);
+      } catch (e) {
+        console.error(e);
+        showToast("Failed to load admin data", "error");
       }
-    }
-    loadData();
+    };
+    load();
   }, []);
 
-  // helper to refresh users from server
-  async function refreshUsers() {
+  const refreshUsers = async () => {
     try {
-      const res = await fetch("/api/admin/users");
-      const data = await res.json();
-      setUsers(data);
-    } catch (err) {
-      console.error("Failed to refresh users", err);
+      const r = await fetch("/api/admin/users");
+      setUsers(await r.json());
+    } catch (e) {
+      console.error(e);
+      showToast("Failed to refresh users", "error");
     }
-  }
-
-  // helper to refresh cars
-  async function refreshCars() {
+  };
+  const refreshCars = async () => {
     try {
-      const res = await fetch("/api/admin/cars");
-      const data = await res.json();
-      setCars(data);
-    } catch (err) {
-      console.error("Failed to refresh cars", err);
+      const r = await fetch("/api/admin/cars");
+      setCars(await r.json());
+    } catch (e) {
+      console.error(e);
+      showToast("Failed to refresh cars", "error");
     }
-  }
+  };
 
-  // Create user
-  async function createUser(e?: React.FormEvent) {
+  /* ---------------------- CRUD helpers ---------------------- */
+  const createUser = async (e?: FormEvent) => {
     e?.preventDefault();
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/admin/users", {
+      const r = await fetch("/api/admin/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(createForm),
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!r.ok) throw new Error(await r.text());
       await refreshUsers();
       setShowCreate(false);
-      setForm({ name: "", email: "", role: "user" });
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || "Failed to create user");
+      setCreateForm({ name: "", email: "", role: "user" });
+      showToast("User created");
+    } catch (e: any) {
+      setError(e.message ?? "Failed to create user");
+      showToast(e.message ?? "Failed to create user", "error");
     } finally {
       setLoading(false);
     }
-  }
+  };
 
-  // Update user
-  async function updateUser(e?: React.FormEvent) {
-    e?.preventDefault();
+  const saveEditUser = async () => {
     if (!editingUser) return;
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/admin/users/${editingUser.id}`, {
+      const id = editingUser.id ?? editingUser._id!;
+      const r = await fetch(`/api/admin/users/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(editForm),
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!r.ok) throw new Error(await r.text());
       await refreshUsers();
+      setEditModalOpen(false);
       setEditingUser(null);
-      setForm({ name: "", email: "", role: "user" });
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || "Failed to update user");
+      showToast("User updated");
+    } catch (e: any) {
+      setError(e.message ?? "Failed to update user");
+      showToast(e.message ?? "Failed to update user", "error");
     } finally {
       setLoading(false);
     }
-  }
+  };
 
-  // Delete user
-  async function deleteUser(id: string) {
+  const deleteUser = async (id: string) => {
     if (!confirm("Delete this user?")) return;
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/admin/users/${id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error(await res.text());
-      setUsers((u) => u.filter((x) => x.id !== id));
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || "Failed to delete user");
+      const r = await fetch(`/api/admin/users/${id}`, { method: "DELETE" });
+      if (!r.ok) throw new Error(await r.text());
+      setUsers((u) => u.filter((x) => (x.id ?? x._id) !== id));
+      showToast("User deleted");
+    } catch (e: any) {
+      setError(e.message ?? "Failed to delete user");
+      showToast(e.message ?? "Failed to delete user", "error");
     } finally {
       setLoading(false);
     }
-  }
+  };
 
-  // prepare form for edit
-  function startEdit(user: any) {
+  const openEditModal = (user: User) => {
     setEditingUser(user);
-    setForm({ name: user.name || "", email: user.email || "", role: user.role || "user" });
-    setShowCreate(false);
-  }
+    setEditForm({
+      name: user.name ?? "",
+      email: user.email ?? "",
+      role: user.role ?? "user",
+    });
+    setEditModalOpen(true);
+  };
+  const closeEditModal = () => {
+    setEditModalOpen(false);
+    setEditingUser(null);
+  };
 
-  // Open modal with full user data
-  function openModal(user: any) {
+  const openModal = (user: User) => {
     setModalUser(user);
-    // copy all editable fields into modalForm
     setModalForm({
-      name: user.name || "",
-      email: user.email || "",
-      phone: user.phone || "",
-      address: user.address || "",
-      city: user.city || "",
-      zip: user.zip || "",
-      notes: user.notes || "",
-      preferredDay1: user.preferredDay1 || "",
-      preferredTime1: user.preferredTime1 || "",
-      preferredDay2: user.preferredDay2 || "",
-      preferredTime2: user.preferredTime2 || "",
+      name: user.name ?? "",
+      email: user.email ?? "",
+      phone: user.phone ?? "",
+      address: user.address ?? "",
+      city: user.city ?? "",
+      zip: user.zip ?? "",
+      notes: user.notes ?? "",
+      preferredDay1: user.preferredDay1 ?? "",
+      preferredTime1: user.preferredTime1 ?? "",
+      preferredDay2: user.preferredDay2 ?? "",
+      preferredTime2: user.preferredTime2 ?? "",
       membershipEnabled: !!user.membershipEnabled,
       isSubscribed: !!user.isSubscribed,
-      role: user.role || "user",
+      role: user.role ?? "user",
     });
-    setModalOpen(true);
-  }
-
-  function closeModal() {
-    setModalOpen(false);
+  };
+  const closeModal = () => {
     setModalUser(null);
     setModalForm(null);
-  }
-
-  // Save modal changes to server
-  async function saveModal(e?: React.FormEvent) {
+  };
+  const saveModal = async (e?: FormEvent) => {
     e?.preventDefault();
     if (!modalUser || !modalForm) return;
     setModalLoading(true);
     try {
-      const id = modalUser.id ?? modalUser._id;
-      const res = await fetch(`/api/admin/users/${id}`, {
+      const id = modalUser.id ?? modalUser._id!;
+      const r = await fetch(`/api/admin/users/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(modalForm),
       });
-      if (!res.ok) throw new Error(await res.text());
+      if (!r.ok) throw new Error(await r.text());
       await refreshUsers();
       closeModal();
-    } catch (err: any) {
-      console.error("Failed to save user", err);
-      setError(err.message || "Failed to save user");
+      showToast("User saved");
+    } catch (e: any) {
+      setError(e.message ?? "Failed to save user");
+      showToast(e.message ?? "Failed to save user", "error");
     } finally {
       setModalLoading(false);
     }
-  }
+  };
 
-  // Car management removed from admin dashboard (users-only view)
+  // Car CRUD (used inside the full user modal)
+  const createCar = async (payload: CarPayload) => {
+    try {
+      const r = await fetch("/api/admin/cars", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!r.ok) throw new Error(await r.text());
+      await refreshCars();
+      await refreshUsers();
+    } catch (e) {
+      console.error(e);
+      showToast("Failed to add car", "error");
+      throw e;
+    }
+  };
+  const deleteCar = async (id: string) => {
+    try {
+      const r = await fetch("/api/admin/cars", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      if (!r.ok) throw new Error(await r.text());
+      await refreshCars();
+      await refreshUsers();
+    } catch (e) {
+      console.error(e);
+      showToast("Failed to delete car", "error");
+      throw e;
+    }
+  };
 
-  // loading session status
+  /* ---------------------- auth guard ---------------------- */
   if (!session?.user) {
-    return <p className="p-8 text-white">Loading session…</p>;
+    return <p className="p-8 text-gray-800">Loading session…</p>;
   }
 
-  // site color: uses CSS variable --site-color with fallback
-  const headerStyle = { background: 'linear-gradient(90deg, var(--accent), var(--accent-hover))' };
-
+  /* ---------------------- render ---------------------- */
   return (
-    <div className="p-8 space-y-6 text-white">
-      <header style={headerStyle} className="rounded-xl p-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold mb-1">Admin Dashboard</h1>
-          <p className="text-sm opacity-90">Manage users and view stats</p>
-        </div>
+    <main className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6 text-gray-900 dark:text-gray-100">
+      {/* toast */}
+      {toast && (
+        <Toast
+          message={toast.msg}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => {
-              signOut({ callbackUrl: "/" });
-            }}
-            className="px-4 py-2 bg-black/30 hover:bg-black/40 rounded-md text-white"
-          >
-            Sign out
-          </button>
+      {/* Header */}
+      <header className="mb-6 flex flex-col items-start justify-between gap-4 rounded-xl bg-white dark:bg-gray-800 p-4 md:flex-row md:items-center border-b border-gray-200 dark:border-gray-700">
+        <div>
+          <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Manage users & view stats
+          </p>
         </div>
+        <button
+          onClick={() => signOut({ callbackUrl: "/" })}
+          className="rounded bg-gray-200 dark:bg-gray-700 px-4 py-2 text-sm font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
+        >
+          Sign out
+        </button>
       </header>
 
       {/* KPI cards */}
-      <Stats {...stats} />
+      <section className="mb-6 grid grid-cols-1 gap-3 md:grid-cols-3">
+        <StatCard label="Total Users" value={stats.userCount} />
+        <StatCard label="Active Users" value={stats.activeUsers} />
+        <StatCard label="Cars" value={stats.carCount} />
+      </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Users column */}
-        <div className="bg-[#111] rounded-xl shadow-xl p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold">Users</h2>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  setShowCreate((s) => !s);
-                  setEditingUser(null);
-                  setForm({ name: "", email: "", role: "user" });
-                }}
-                className="px-3 py-1 rounded bg-white/8 hover:bg-white/12"
-              >
-                {showCreate ? "Close" : "New User"}
-              </button>
-            </div>
+      {/* Users list & actions */}
+      <section className="space-y-4">
+        <Card className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+            Users
+          </h2>
+          <div className="flex gap-2">
+            <button
+              onClick={() => {
+                setShowCreate((s) => !s);
+                setCreateForm({ name: "", email: "", role: "user" });
+              }}
+              className="rounded bg-[var(--accent)] px-3 py-1 text-sm font-medium text-white hover:opacity-90"
+            >
+              {showCreate ? "Close" : "New User"}
+            </button>
+            <button
+              onClick={() => {
+                refreshUsers();
+                refreshCars();
+              }}
+              className="rounded bg-gray-200 dark:bg-gray-700 px-3 py-1 text-sm font-medium text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600"
+            >
+              Refresh
+            </button>
           </div>
+        </Card>
 
-          {error && <div className="text-red-400 mb-3">{error}</div>}
+        {/* error */}
+        {error && <p className="text-sm text-red-600">{error}</p>}
 
-          {/* create / edit form */}
-          {(showCreate || editingUser) && (
-            <form onSubmit={editingUser ? updateUser : createUser} className="mb-6 space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <input
-                  required
-                  value={form.name}
-                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                  placeholder="Name"
-                  className="p-2 rounded bg-[#0d0d0d] border border-white/6"
-                />
-                <input
-                  required
-                  type="email"
-                  value={form.email}
-                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                  placeholder="Email"
-                  className="p-2 rounded bg-[#0d0d0d] border border-white/6"
-                />
-                <select
-                  value={form.role}
-                  onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
-                  className="p-2 rounded bg-[#0d0d0d] border border-white/6"
-                >
-                  <option value="user">User</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </div>
+        {/* create‑user form (inline) */}
+        {showCreate && (
+          <Card>
+            <UserForm
+              form={createForm}
+              setForm={setCreateForm}
+              loading={loading}
+              onSubmit={createUser}
+              onCancel={() => setShowCreate(false)}
+              isEdit={false}
+            />
+          </Card>
+        )}
 
-              <div className="flex gap-2">
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="px-4 py-2 rounded bg-white/10 hover:bg-white/16"
-                >
-                  {editingUser ? (loading ? "Saving..." : "Save") : loading ? "Creating..." : "Create"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowCreate(false);
-                    setEditingUser(null);
-                    setForm({ name: "", email: "", role: "user" });
-                  }}
-                  className="px-4 py-2 rounded bg-white/6"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          )}
+        {/* compact users table */}
+        <UserTable
+          users={users}
+          cars={cars}
+          onEditUser={openEditModal}
+          onDeleteUser={deleteUser}
+          onExpandUser={openModal}
+        />
+      </section>
 
-          {/* users as cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {users.length === 0 && <div className="text-sm opacity-80">No users found</div>}
+      {/* Edit‑User modal (compact) */}
+      <EditUserModal
+        open={editModalOpen}
+        onClose={closeEditModal}
+        user={editingUser}
+        form={editForm}
+        setForm={setEditForm}
+        loading={loading}
+        onSave={saveEditUser}
+      />
 
-            {users.map((u) => {
-              const addressParts = [u.address, u.city, u.zip].filter(Boolean);
-
-              return (
-                <div key={u.id ?? u._id} className="bg-[#0b0b0b] p-4 rounded-lg border border-white/6">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3">
-                        <div className="font-semibold text-lg">{u.name || "—"}</div>
-                        <div className="text-sm opacity-80">{u.email}</div>
-                        <div className="text-xs ml-2 inline-block px-2 py-1 bg-white/6 rounded">{u.role}</div>
-                      </div>
-
-                      <div className="mt-2 text-sm space-y-1 opacity-85">
-                        {addressParts.length > 0 && (
-                          <div>
-                            <strong>Address:</strong> {addressParts.join(", ")}
-                          </div>
-                        )}
-
-                        {u.phone && (
-                          <div>
-                            <strong>Phone:</strong> {u.phone}
-                          </div>
-                        )}
-
-                        {u.notes && (
-                          <div className="max-w-prose">
-                            <strong>Notes:</strong> {u.notes}
-                          </div>
-                        )}
-
-                        {(u.preferredDay1 || u.preferredTime1) && (
-                          <div>
-                            <strong>Preferred:</strong> {u.preferredDay1 ?? ""} {u.preferredTime1 ?? ""}
-                            {u.preferredDay2 || u.preferredTime2 ? ` — ${u.preferredDay2 ?? ""} ${u.preferredTime2 ?? ""}` : ""}
-                          </div>
-                        )}
-
-                        <div>
-                          <strong>Member:</strong> {u.membershipEnabled ? "Yes" : "No"}
-                          {u.isSubscribed ? <span className="ml-2">• Subscribed</span> : null}
-                        </div>
-
-                        {u.stripeCustomerId && (
-                          <div className="truncate">
-                            <strong>Stripe ID:</strong> {u.stripeCustomerId}
-                          </div>
-                        )}
-
-                        {/* User's cars as compact chips */}
-                        {(() => {
-                          const userId = u.id ?? u._id;
-                          const userCars = cars.filter((c) => {
-                            const owner = c.userId ?? (c.user && (c.user.id ?? c.user._id));
-                            try {
-                              return String(owner) === String(userId);
-                            } catch (e) {
-                              return false;
-                            }
-                          });
-
-                          if (userCars.length === 0) return null;
-
-                          return (
-                            <div className="mt-2 flex flex-wrap gap-2">
-                              {userCars.slice(0, 3).map((car) => (
-                                <div
-                                  key={car.id ?? car._id}
-                                  className="text-xs px-2 py-1 bg-white/6 rounded"
-                                  title={car.vin || car.plate || `${car.make ?? ""} ${car.model ?? ""}`}
-                                >
-                                  {car.make || car.plate ? `${car.make ?? ""} ${car.model ?? ""}`.trim() : car.plate ?? car.vin ?? "Car"}
-                                </div>
-                              ))}
-
-                              {userCars.length > 3 && (
-                                <div className="text-xs px-2 py-1 bg-[var(--accent)] text-white rounded">+{userCars.length - 3} more</div>
-                              )}
-                            </div>
-                          );
-                        })()}
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col items-end gap-2">
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => startEdit(u)}
-                          className="px-2 py-1 text-sm rounded bg-white/8 hover:bg-white/12"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => openModal(u)}
-                          className="px-2 py-1 text-sm rounded bg-[var(--accent)] hover:opacity-90"
-                          style={{ color: "white" }}
-                        >
-                          Expand
-                        </button>
-                        <button
-                          onClick={() => deleteUser(u.id ?? u._id)}
-                          className="px-2 py-1 text-sm rounded bg-red-600/80 hover:bg-red-600"
-                        >
-                          Delete
-                        </button>
-                      </div>
-
-                      <div className="text-xs opacity-70">{u.createdAt ? new Date(u.createdAt).toLocaleString() : null}</div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Cars column removed - admin UI shows users only */}
-      </div>
-
-      {/* Modal: expanded user profile */}
-      {modalOpen && modalUser && modalForm && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center p-6" aria-modal="true">
-          <div className="absolute inset-0 bg-black/60" onClick={closeModal}></div>
-
-          <form onSubmit={saveModal} className="relative z-10 w-full max-w-3xl bg-[#060606] rounded-lg shadow-xl overflow-auto" style={{ maxHeight: '90vh' }}>
-            <header className="p-4 rounded-t" style={{ background: 'linear-gradient(90deg, var(--accent), var(--accent-hover))' }}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-xl font-bold text-white">{modalForm.name || 'User'}</h3>
-                  <div className="text-sm text-white/90">{modalForm.email}</div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button type="button" onClick={closeModal} className="px-3 py-1 rounded bg-white/10 text-white">Close</button>
-                  <button type="submit" disabled={modalLoading} className="px-3 py-1 rounded bg-white text-black">{modalLoading ? 'Saving...' : 'Save'}</button>
-                </div>
-              </div>
-            </header>
-
-            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6 text-white">
-              <div className="space-y-3">
-                <label className="block text-sm">Name
-                  <input value={modalForm.name} onChange={(e) => setModalForm((f: any) => ({ ...f, name: e.target.value }))} className="w-full mt-1 p-2 bg-[#0d0d0d] rounded" />
-                </label>
-
-                <label className="block text-sm">Email
-                  <input type="email" value={modalForm.email} onChange={(e) => setModalForm((f: any) => ({ ...f, email: e.target.value }))} className="w-full mt-1 p-2 bg-[#0d0d0d] rounded" />
-                </label>
-
-                <label className="block text-sm">Phone
-                  <input value={modalForm.phone} onChange={(e) => setModalForm((f: any) => ({ ...f, phone: e.target.value }))} className="w-full mt-1 p-2 bg-[#0d0d0d] rounded" />
-                </label>
-
-                <label className="block text-sm">Address
-                  <input value={modalForm.address} onChange={(e) => setModalForm((f: any) => ({ ...f, address: e.target.value }))} className="w-full mt-1 p-2 bg-[#0d0d0d] rounded" />
-                </label>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <label className="block text-sm">City
-                    <input value={modalForm.city} onChange={(e) => setModalForm((f: any) => ({ ...f, city: e.target.value }))} className="w-full mt-1 p-2 bg-[#0d0d0d] rounded" />
-                  </label>
-                  <label className="block text-sm">ZIP
-                    <input value={modalForm.zip} onChange={(e) => setModalForm((f: any) => ({ ...f, zip: e.target.value }))} className="w-full mt-1 p-2 bg-[#0d0d0d] rounded" />
-                  </label>
-                </div>
-
-                <label className="block text-sm">Notes
-                  <textarea value={modalForm.notes} onChange={(e) => setModalForm((f: any) => ({ ...f, notes: e.target.value }))} className="w-full mt-1 p-2 bg-[#0d0d0d] rounded" />
-                </label>
-              </div>
-
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-2">
-                  <label className="block text-sm">Preferred Day 1
-                    <input value={modalForm.preferredDay1} onChange={(e) => setModalForm((f: any) => ({ ...f, preferredDay1: e.target.value }))} className="w-full mt-1 p-2 bg-[#0d0d0d] rounded" />
-                  </label>
-                  <label className="block text-sm">Preferred Time 1
-                    <input value={modalForm.preferredTime1} onChange={(e) => setModalForm((f: any) => ({ ...f, preferredTime1: e.target.value }))} className="w-full mt-1 p-2 bg-[#0d0d0d] rounded" />
-                  </label>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <label className="block text-sm">Preferred Day 2
-                    <input value={modalForm.preferredDay2} onChange={(e) => setModalForm((f: any) => ({ ...f, preferredDay2: e.target.value }))} className="w-full mt-1 p-2 bg-[#0d0d0d] rounded" />
-                  </label>
-                  <label className="block text-sm">Preferred Time 2
-                    <input value={modalForm.preferredTime2} onChange={(e) => setModalForm((f: any) => ({ ...f, preferredTime2: e.target.value }))} className="w-full mt-1 p-2 bg-[#0d0d0d] rounded" />
-                  </label>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <label className="flex items-center gap-2"><input type="checkbox" checked={modalForm.membershipEnabled} onChange={(e) => setModalForm((f: any) => ({ ...f, membershipEnabled: e.target.checked }))} /> Membership enabled</label>
-                  <label className="flex items-center gap-2"><input type="checkbox" checked={modalForm.isSubscribed} onChange={(e) => setModalForm((f: any) => ({ ...f, isSubscribed: e.target.checked }))} /> Subscribed</label>
-                </div>
-
-                <label className="block text-sm">Role
-                  <select value={modalForm.role} onChange={(e) => setModalForm((f: any) => ({ ...f, role: e.target.value }))} className="w-full mt-1 p-2 bg-[#0d0d0d] rounded">
-                    <option value="user">User</option>
-                    <option value="editor">Editor</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                </label>
-
-                {/* Cars management removed from admin modal - users-only admin view */}
-              </div>
-            </div>
-          </form>
-        </div>
-      )}
-    </div>
+      {/* Full‑User modal (expand) */}
+      <UserModal
+        user={modalUser}
+        form={modalForm}
+        setForm={setModalForm}
+        loading={modalLoading}
+        onSave={saveModal}
+        onClose={closeModal}
+        cars={cars}
+        createCar={createCar}
+        deleteCar={deleteCar}
+      />
+    </main>
   );
 }
-// ...existing code...
