@@ -10,41 +10,37 @@ export function Stats({
   activeUsers: number;
   carCount: number;
 }) {
-  const cards = [
-    {
-      title: "Total Users",
-      value: userCount,
-      icon: "👥",
-      bg: "bg-blue-600",
-    },
-    {
-      title: "Active Users (30 days)",
-      value: activeUsers,
-      icon: "🟢",
-      bg: "bg-green-600",
-    },
-    {
-      title: "Total Cars",
-      value: carCount,
-      icon: "🚗",
-      bg: "bg-purple-600",
-    },
-  ];
-
   return (
-    <div className="flex flex-col sm:flex-row gap-4 mb-6">
-      {cards.map((c) => (
-        <div
-          key={c.title}
-          className={`flex flex-1 items-center p-4 rounded-xl shadow-md ${c.bg} text-white`}
-        >
-          <span className="text-4xl mr-4">{c.icon}</span>
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <div className="p-5 rounded-xl shadow-md bg-gradient-to-r from-[var(--accent)] to-[var(--accent-hover)] text-white">
+        <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm">{c.title}</p>
-            <p className="text-2xl font-bold">{c.value}</p>
+            <div className="text-xs uppercase tracking-wider opacity-90">Total Users</div>
+            <div className="text-3xl font-extrabold mt-1">{userCount}</div>
           </div>
+          <div className="text-3xl">👥</div>
         </div>
-      ))}
+      </div>
+
+      <div className="p-5 rounded-xl shadow-md bg-[#111] border border-white/6 text-white">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-xs uppercase tracking-wider text-[#999]">Active Users (30 days)</div>
+            <div className="text-3xl font-extrabold mt-1">{activeUsers}</div>
+          </div>
+          <div className="text-3xl">🟢</div>
+        </div>
+      </div>
+
+      <div className="p-5 rounded-xl shadow-md bg-[#111] border border-white/6 text-white">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="text-xs uppercase tracking-wider text-[#999]">Total Cars</div>
+            <div className="text-3xl font-extrabold mt-1">{carCount}</div>
+          </div>
+          <div className="text-3xl">🚗</div>
+        </div>
+      </div>
     </div>
   );
 }
