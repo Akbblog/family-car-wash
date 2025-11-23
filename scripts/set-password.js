@@ -31,19 +31,48 @@ async function main() {
     const db = client.db();
     const users = db.collection('users');
 
-    const hashed = await bcrypt.hash(newPassword, 12);
+    console.log('Connected to DB:', db.databaseName || '(default)');
 
-    const res = await users.findOneAndUpdate(
-      { email },
-      { $set: { password: hashed } },
-      { returnDocument: 'after' }
-    );
+    // helper to escape regex
+    function escapeRegExp(string) {
+      return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
 
-    if (!res.value) {
+    // 1) Try exact match first
+    let existing = await users.findOne({ email });
+
+    // 2) If not found, try case-insensitive exact-match via regex
+    if (!existing) {
+      existing = await users.findOne({ email: { $regex: `^${escapeRegExp(email)}$`, $options: 'i' } });
+      if (existing) {
+        console.log('Found user by case-insensitive match, id:', existing._id?.toString(), 'stored email:', existing.email);
+      }
+    } else {
+      console.log('Found user by exact match, id:', existing._id?.toString(), 'stored email:', existing.email);
+    }
+
+    if (!existing) {
+      // Provide some helpful context: list users with the same domain
+      const domain = email.split('@')[1];
+      if (domain) {
+        const nearby = await users.find({ email: { $regex: escapeRegExp(domain) + '$', $options: 'i' } }).limit(10).toArray();
+        console.log('No exact user found. Users with same domain:');
+        for (const u of nearby) {
+          console.log('-', u._id?.toString(), u.email);
+        }
+      }
       console.error('No user found with email:', email);
       process.exitCode = 2;
+      return;
+    }
+
+    const hashed = await bcrypt.hash(newPassword, 12);
+
+    const upd = await users.updateOne({ _id: existing._id }, { $set: { password: hashed } });
+    if (upd.modifiedCount === 1) {
+      console.log('Password updated for user:', existing.email);
     } else {
-      console.log('Password updated for user:', email);
+      console.warn('Update ran but modifiedCount !== 1, result:', upd);
     }
   } catch (err) {
     console.error('Error:', err);
