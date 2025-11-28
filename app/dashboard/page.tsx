@@ -78,7 +78,7 @@ export default async function Dashboard() {
               Garage <span className="text-[#ff3366]">Control</span>
             </h1>
             <p className="text-[#999] uppercase tracking-widest text-sm">
-              Welcome back, {(user as any).name}
+              Manage your garage & subscription
             </p>
           </div>
 
@@ -93,10 +93,10 @@ export default async function Dashboard() {
             {/* MEMBERSHIP STATUS CARD */}
             <div
               className={`p-8 rounded-xl border ${isSubscribed
-                  ? 'bg-[#ff3366]/10 border-[#ff3366]/30'
-                  : isWaitlisted
-                    ? 'bg-yellow-500/10 border-yellow-500/20'  // ⭐ WAITLIST COLOR
-                    : 'bg-[#111] border-white/5'
+                ? 'bg-[#ff3366]/10 border-[#ff3366]/30'
+                : isWaitlisted
+                  ? 'bg-yellow-500/10 border-yellow-500/20'  // ⭐ WAITLIST COLOR
+                  : 'bg-[#111] border-white/5'
                 }`}
             >
               <h3 className="text-white uppercase font-bold mb-4 flex items-center">

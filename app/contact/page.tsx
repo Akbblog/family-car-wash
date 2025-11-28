@@ -3,7 +3,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { cn } from "@/lib/utils";   // <-- helper that merges Tailwind classes
+import { cn } from "@/lib/utils";
 
 export default function ContactPage() {
   /* ---------------- State ---------------- */
@@ -45,7 +45,7 @@ export default function ContactPage() {
     setStatus("idle");
 
     /* ---- grab form data safely ---- */
-    const form = e.currentTarget;      // TS knows this is an HTMLFormElement
+    const form = e.currentTarget;
     const formData = new FormData(form);
     const data = {
       name: formData.get("name") as string,
@@ -84,18 +84,19 @@ export default function ContactPage() {
     setLoading(false);
   }
 
-  /* ---------------- Render ---------------- */
   return (
-    <main className="min-h-screen bg-[#0a0a0a] p-6 md:p-12">
+    <main className="min-h-screen bg-[#0a0a0a] p-6 md:p-12 pt-24">
       <div className="max-w-[900px] mx-auto">
         {/* HEADER */}
-        <div className="mb-12 pb-6 border-b border-white/10">
-          <h1 className="text-4xl font-black text-white uppercase tracking-tighter mb-2">
-            Contact <span className="text-[#ff3366]">Support</span>
-          </h1>
-          <p className="text-[#777] text-sm">
-            We’re here to help — reach out anytime.
-          </p>
+        <div className="flex flex-wrap justify-between items-end mb-12 pb-6 border-b border-white/10">
+          <div>
+            <h1 className="text-4xl font-black text-white uppercase tracking-tighter mb-2">
+              Contact <span className="text-[#ff3366]">Support</span>
+            </h1>
+            <p className="text-[#999] uppercase tracking-widest text-sm">
+              We’re here to help — reach out anytime
+            </p>
+          </div>
         </div>
 
         {/* CONTACT FORM */}
@@ -111,16 +112,8 @@ export default function ContactPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* NAME */}
-            <div
-              className={cn(
-                "relative",
-                errors.name && "animate-shake"
-              )}
-            >
-              <label
-                htmlFor="name"
-                className="block text-[11px] text-[#999] uppercase tracking-widest mb-2"
-              >
+            <div className={cn("relative", errors.name && "animate-shake")}>
+              <label htmlFor="name" className="block text-[11px] text-[#999] uppercase tracking-widest mb-2">
                 Your Name
               </label>
               <input
@@ -133,22 +126,12 @@ export default function ContactPage() {
                   errors.name && "border-red-500"
                 )}
               />
-              {errors.name && (
-                <p className="mt-1 text-sm text-red-400">{errors.name}</p>
-              )}
+              {errors.name && <p className="mt-1 text-sm text-red-400">{errors.name}</p>}
             </div>
 
             {/* PHONE */}
-            <div
-              className={cn(
-                "relative",
-                errors.phone && "animate-shake"
-              )}
-            >
-              <label
-                htmlFor="phone"
-                className="block text-[11px] text-[#999] uppercase tracking-widest mb-2"
-              >
+            <div className={cn("relative", errors.phone && "animate-shake")}>
+              <label htmlFor="phone" className="block text-[11px] text-[#999] uppercase tracking-widest mb-2">
                 Phone Number
               </label>
               <input
@@ -162,22 +145,12 @@ export default function ContactPage() {
                   errors.phone && "border-red-500"
                 )}
               />
-              {errors.phone && (
-                <p className="mt-1 text-sm text-red-400">{errors.phone}</p>
-              )}
+              {errors.phone && <p className="mt-1 text-sm text-red-400">{errors.phone}</p>}
             </div>
 
             {/* EMAIL */}
-            <div
-              className={cn(
-                "relative",
-                errors.email && "animate-shake"
-              )}
-            >
-              <label
-                htmlFor="email"
-                className="block text-[11px] text-[#999] uppercase tracking-widest mb-2"
-              >
+            <div className={cn("relative", errors.email && "animate-shake")}>
+              <label htmlFor="email" className="block text-[11px] text-[#999] uppercase tracking-widest mb-2">
                 Email Address
               </label>
               <input
@@ -190,22 +163,12 @@ export default function ContactPage() {
                   errors.email && "border-red-500"
                 )}
               />
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-400">{errors.email}</p>
-              )}
+              {errors.email && <p className="mt-1 text-sm text-red-400">{errors.email}</p>}
             </div>
 
             {/* MESSAGE */}
-            <div
-              className={cn(
-                "relative",
-                errors.message && "animate-shake"
-              )}
-            >
-              <label
-                htmlFor="message"
-                className="block text-[11px] text-[#999] uppercase tracking-widest mb-2"
-              >
+            <div className={cn("relative", errors.message && "animate-shake")}>
+              <label htmlFor="message" className="block text-[11px] text-[#999] uppercase tracking-widest mb-2">
                 Message
               </label>
               <textarea
@@ -218,9 +181,7 @@ export default function ContactPage() {
                   errors.message && "border-red-500"
                 )}
               />
-              {errors.message && (
-                <p className="mt-1 text-sm text-red-400">{errors.message}</p>
-              )}
+              {errors.message && <p className="mt-1 text-sm text-red-400">{errors.message}</p>}
             </div>
 
             {/* SUBMIT BUTTON */}
@@ -236,23 +197,9 @@ export default function ContactPage() {
             >
               {loading ? (
                 <>
-                  <svg
-                    className="animate-spin-slow w-4 h-4"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8v8H4z"
-                    />
+                  <svg className="animate-spin-slow w-4 h-4" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                   </svg>
                   Sending…
                 </>
@@ -269,8 +216,8 @@ export default function ContactPage() {
               status === "success"
                 ? { opacity: 1 }
                 : status === "error" || status === "invalid"
-                ? { opacity: 1 }
-                : { opacity: 0 }
+                  ? { opacity: 1 }
+                  : { opacity: 0 }
             }
             transition={{ duration: 0.3 }}
           >
