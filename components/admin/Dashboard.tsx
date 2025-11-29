@@ -1309,7 +1309,7 @@ const UserCard = ({
 
           {/* SCHEDULING & MEMBERSHIP */}
           <div className="space-y-4 pt-6 border-t border-white/10">
-            <h3 className="text-sm font-bold text-white uppercase tracking-widest">Step 2: Scheduling & Membership</h3>
+            <h3 className="text-sm font-bold text-white uppercase tracking-widest">Scheduling & Membership</h3>
             
             <div>
               <label className={labelCls}>Service Notes</label>
@@ -1389,7 +1389,7 @@ const UserCard = ({
           {/* ACCOUNT & ROLES + CARS */}
           <div className="space-y-4 pt-6 border-t border-white/10">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-bold text-white uppercase tracking-widest">Step 3: Account & Cars</h3>
+              <h3 className="text-sm font-bold text-white uppercase tracking-widest">Account & Cars</h3>
               <button 
                 onClick={() => setShowDetails(!showDetails)}
                 className="text-xs text-[#ff3366] hover:text-white"
