@@ -143,7 +143,7 @@ export default function AddressForm({ userData }: Props) {
         <p className="text-sm text-[#999] font-bold tracking-wider">Location & Contact</p>
         <div>
           <label className="block text-[11px] text-[#999] uppercase tracking-widest mb-2">
-            Address
+
           </label>
           <input
             name=""
@@ -156,18 +156,18 @@ export default function AddressForm({ userData }: Props) {
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-[11px] text-[#999] uppercase tracking-widest mb-2">City</label>
+            <label className="block text-[11px] text-[#999] uppercase tracking-widest mb-2"></label>
             <input name="" type="text" placeholder="Your City" defaultValue={userData.city} required className="w-full bg-black border border-white/10 px-4 py-3 text-white placeholder:text-white/20 text-sm focus:outline-none focus:border-[#ff3366] transition-colors" />
           </div>
           <div>
-            <label className="block text-[11px] text-[#999] uppercase tracking-widest mb-2">Zip Code</label>
+            <label className="block text-[11px] text-[#999] uppercase tracking-widest mb-2"></label>
             <input name="" type="text" placeholder="Zip Code" defaultValue={userData.zip} required className="w-full bg-black border border-white/10 px-4 py-3 text-white placeholder:text-white/20 text-sm focus:outline-none focus:border-[#ff3366] transition-colors" />
           </div>
         </div>
 
         <div>
           <label className="block text-[11px] text-[#999] uppercase tracking-widest mb-2">
-            Phone
+
           </label>
           <input
             name=""
