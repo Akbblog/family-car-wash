@@ -28,7 +28,8 @@ export default function LoginPage() {
     // signIn returns an object with error/ok/url in v4/v5
     if (!res || (res as any).error) {
       setLoading(false);
-      setError((res as any)?.error || "Invalid email or password.");
+      console.error("Login error:", (res as any)?.error);
+      setError("Invalid email or password.");
       return;
     }
 
