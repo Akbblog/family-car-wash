@@ -114,13 +114,14 @@ export default function ContactPage() {
             {/* NAME */}
             <div className={cn("relative", errors.name && "animate-shake")}>
               <label htmlFor="name" className="block text-[11px] text-[#999] uppercase tracking-widest mb-2">
-                Your Name
+                
               </label>
               <input
                 id="name"
                 name="name"
                 type="text"
                 required
+                placeholder="Full Name"
                 className={cn(
                   "w-full bg-black border border-white/10 px-4 py-3 text-white placeholder:text-white/20 text-sm focus:outline-none focus:border-[#ff3366] focus:ring-2 focus:ring-accent transition-colors",
                   errors.name && "border-red-500"
@@ -132,14 +133,14 @@ export default function ContactPage() {
             {/* PHONE */}
             <div className={cn("relative", errors.phone && "animate-shake")}>
               <label htmlFor="phone" className="block text-[11px] text-[#999] uppercase tracking-widest mb-2">
-                Phone Number
+                
               </label>
               <input
                 id="phone"
                 name="phone"
                 type="tel"
                 required
-                placeholder="e.g. +61 2 1234 5678"
+                placeholder="Phone Number"
                 className={cn(
                   "w-full bg-black border border-white/10 px-4 py-3 text-white placeholder:text-white/20 text-sm focus:outline-none focus:border-[#ff3366] focus:ring-2 focus:ring-accent transition-colors",
                   errors.phone && "border-red-500"
@@ -151,13 +152,14 @@ export default function ContactPage() {
             {/* EMAIL */}
             <div className={cn("relative", errors.email && "animate-shake")}>
               <label htmlFor="email" className="block text-[11px] text-[#999] uppercase tracking-widest mb-2">
-                Email Address
+                
               </label>
               <input
                 id="email"
                 name="email"
                 type="email"
                 required
+                placeholder="Email Address"
                 className={cn(
                   "w-full bg-black border border-white/10 px-4 py-3 text-white placeholder:text-white/20 text-sm focus:outline-none focus:border-[#ff3366] focus:ring-2 focus:ring-accent transition-colors",
                   errors.email && "border-red-500"
@@ -169,13 +171,14 @@ export default function ContactPage() {
             {/* MESSAGE */}
             <div className={cn("relative", errors.message && "animate-shake")}>
               <label htmlFor="message" className="block text-[11px] text-[#999] uppercase tracking-widest mb-2">
-                Message
+                
               </label>
               <textarea
                 id="message"
                 name="message"
                 rows={5}
                 required
+                placeholder="Your Message"
                 className={cn(
                   "w-full bg-black border border-white/10 px-4 py-3 text-white placeholder:text-white/20 text-sm focus:outline-none focus:border-[#ff3366] focus:ring-2 focus:ring-accent transition-colors",
                   errors.message && "border-red-500"
