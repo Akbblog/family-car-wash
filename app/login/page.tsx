@@ -18,25 +18,31 @@ export default function LoginPage() {
     setError(null);
     setLoading(true);
 
-    // Call next-auth signIn client-side so cookies are set in the browser
-    const res: any = await signIn("credentials", {
-      redirect: false,
-      email,
-      password,
-    });
+    try {
+      // Call next-auth signIn client-side so cookies are set in the browser
+      const res: any = await signIn("credentials", {
+        redirect: false,
+        email,
+        password,
+      });
 
-    // signIn returns an object with error/ok/url in v4/v5
-    if (!res || (res as any).error) {
+      // signIn returns an object with error/ok/url in v4/v5
+      if (!res || (res as any).error) {
+        setLoading(false);
+        console.error("Login error response:", (res as any)?.error);
+        setError("Invalid email or password.");
+        return;
+      }
+
+      // Keep loading state active during navigation
+      // Refresh session and navigate to dashboard
+      await update();
+      router.push("/dashboard");
+    } catch (err) {
       setLoading(false);
-      console.error("Login error:", (res as any)?.error);
+      console.error("Login exception:", err);
       setError("Invalid email or password.");
-      return;
     }
-
-    // Keep loading state active during navigation
-    // Refresh session and navigate to dashboard
-    await update();
-    router.push("/dashboard");
   };
 
   return (
