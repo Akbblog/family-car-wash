@@ -33,7 +33,8 @@ function SubmitButton() {
 }
 
 export default function AddressForm({ userData }: Props) {
-  const [state, formAction] = useActionState(updateServiceDetails, null);
+  // Initialize with empty object to match Result type
+  const [state, formAction] = useActionState(updateServiceDetails, {});
 
   const serverHasDetails = userData?.address && userData.preferredDay1 && userData.preferredDay2;
   const [currentHasDetails, setCurrentHasDetails] = useState(!!serverHasDetails);
