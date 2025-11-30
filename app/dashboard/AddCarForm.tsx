@@ -78,27 +78,27 @@ export default function AddCarForm() {
 
       <form action={formAction} className="space-y-4">
         {/* Section Label - NEW to match AddressForm */}
-        <p className="text-sm text-[#999] font-bold tracking-wider">Vehicle Details</p>
+        <p className="text-sm text-[#999] font-bold tracking-wider"></p>
 
         {/* Row: Make + Model */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-[11px] text-[#999] uppercase tracking-widest mb-2">Make</label>
+            <label className="block text-[11px] text-[#999] uppercase tracking-widest mb-2"></label>
             <input 
               name="make"
               type="text"
-              placeholder="e.g. TOYOTA"
+              placeholder="Make"
               required
               className="w-full bg-black border border-white/10 px-4 py-3 text-white placeholder:text-white/20 text-sm focus:outline-none focus:border-[#ff3366] transition-colors"
             />
           </div>
 
           <div>
-            <label className="block text-[11px] text-[#999] uppercase tracking-widest mb-2">Model</label>
+            <label className="block text-[11px] text-[#999] uppercase tracking-widest mb-2"></label>
             <input
               name="model"
               type="text"
-              placeholder="e.g. CAMRY"
+              placeholder="Model"
               required
               className="w-full bg-black border border-white/10 px-4 py-3 text-white placeholder:text-white/20 text-sm focus:outline-none focus:border-[#ff3366] transition-colors"
             />
@@ -108,22 +108,22 @@ export default function AddCarForm() {
         {/* Row: Color + License Plate */}
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-[11px] text-[#999] uppercase tracking-widest mb-2">Color</label>
+            <label className="block text-[11px] text-[#999] uppercase tracking-widest mb-2"></label>
             <input
               name="color"
               type="text"
-              placeholder="e.g. BLACK"
+              placeholder="Color"
               required
               className="w-full bg-black border border-white/10 px-4 py-3 text-white placeholder:text-white/20 text-sm focus:outline-none focus:border-[#ff3366] transition-colors"
             />
           </div>
 
           <div>
-            <label className="block text-[11px] text-[#999] uppercase tracking-widest mb-2">License Plate</label>
+            <label className="block text-[11px] text-[#999] uppercase tracking-widest mb-2"></label>
             <input
               name="licensePlate"
               type="text"
-              placeholder="e.g. 8ABC123"
+              placeholder="License Plate"
               required
               className="w-full bg-black border border-white/10 px-4 py-3 text-white placeholder:text-white/20 text-sm focus:outline-none focus:border-[#ff3366] transition-colors"
             />
